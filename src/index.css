@@ -1,0 +1,46 @@
+@import url('https://fonts.googleapis.com/css2?family=Tiro+Bangla:ital@0;1&family=Inter:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", "Tiro Bangla", ui-sans-serif, system-ui, sans-serif;
+  --font-bangla: "Tiro Bangla", serif;
+
+  --color-primary: var(--primary, #10b981);
+  --color-primary-dark: var(--secondary, #059669);
+  --color-bg-soft: var(--bg-soft, #f8fafc);
+  --color-card-bg: var(--card-bg, #ffffff);
+  --color-text-primary: var(--text-primary, #111827);
+  --color-text-secondary: var(--text-secondary, #64748b);
+  --color-device-frame: #1e293b;
+
+  --spacing-main: 16px;
+  --spacing-card: 16px;
+  --spacing-gap: 12px;
+  --spacing-section: 20px;
+
+  --radius-card: 22px;
+  --radius-small: 14px;
+}
+
+@layer base {
+  body {
+    @apply bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans min-h-screen m-0 p-0 overflow-x-hidden transition-colors duration-300;
+  }
+}
+
+.mobile-container {
+  @apply w-full max-w-[420px] min-h-screen bg-card-bg relative flex flex-col mx-auto overflow-y-auto transition-colors duration-300;
+}
+
+.bangla {
+  font-family: "Tiro Bangla", serif;
+}
+
+/* Scrollbar hide for mobile feel */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

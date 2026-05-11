@@ -1,0 +1,389 @@
+import { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { MobileLayout } from '../components/layout/MobileLayout';
+import { supabase } from '../lib/supabase';
+import { useAuthStore } from '../store/useAuthStore';
+import { useWalletStore } from '../store/useWalletStore';
+import { useTheme } from '../components/ThemeProvider';
+import { 
+  User, 
+  Mail, 
+  Calendar, 
+  ChevronLeft, 
+  Shield, 
+  CheckCircle2, 
+  AlertCircle,
+  Loader2,
+  Wallet,
+  History,
+  TrendingUp,
+  Plus
+} from 'lucide-react';
+import { motion } from 'motion/react';
+
+interface MemberProfile {
+  id: string;
+  full_name: string;
+  email: string;
+  role: 'admin' | 'member' | 'pending';
+  created_at: string;
+  avatar_url?: string;
+  bio?: string;
+}
+
+export default function MemberDetail() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const theme = useTheme();
+  const currentUser = useAuthStore(state => state.profile);
+  const wallet = useWalletStore(state => state.wallet);
+  const transactions = useWalletStore(state => state.transactions);
+  const fetchWallet = useWalletStore(state => state.fetchWallet);
+  const fetchTransactions = useWalletStore(state => state.fetchTransactions);
+  
+  const [member, setMember] = useState<MemberProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [pendingRole, setPendingRole] = useState<'admin' | 'member' | 'pending' | null>(null);
+  const [message, setMessage] = useState({ text: '', type: '' });
+
+  const isAdmin = currentUser?.role === 'admin';
+
+  useEffect(() => {
+    const loadData = async () => {
+      if (!id) return;
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (error) {
+        navigate('/members');
+      } else {
+        setMember(data);
+        fetchWallet(id);
+        fetchTransactions(id);
+      }
+      setLoading(false);
+    };
+
+    loadData();
+  }, [id, navigate, fetchWallet, fetchTransactions]);
+
+  const confirmRoleChange = (newRole: 'admin' | 'member' | 'pending') => {
+    setPendingRole(newRole);
+    setShowConfirm(true);
+  };
+
+  const handleRoleChange = async () => {
+    if (!id || !member || !pendingRole) return;
+    setUpdating(true);
+    setMessage({ text: '', type: '' });
+    setShowConfirm(false);
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ role: pendingRole })
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      setMember({ ...member, role: pendingRole });
+      setMessage({ text: 'রোল সফলভাবে পরিবর্তন করা হয়েছে', type: 'success' });
+    } catch (err: any) {
+      setMessage({ text: err.message || 'Error updating role', type: 'error' });
+    } finally {
+      setUpdating(false);
+      setPendingRole(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <MobileLayout>
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="animate-spin text-primary" size={32} />
+        </div>
+      </MobileLayout>
+    );
+  }
+
+  if (!member) return null;
+
+  return (
+    <MobileLayout>
+        <div className="flex items-center gap-4 px-1">
+          <button 
+            onClick={() => navigate('/members')}
+            className="bg-white p-2.5 rounded-full shadow-sm border border-slate-100 text-slate-500 active:scale-95 transition-transform"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <h1 className="text-[20px] font-bold text-slate-800 bangla">সদস্য বিস্তারিত</h1>
+        </div>
+
+        {/* Profile Card */}
+        <div className="bg-white rounded-[22px] p-8 flex flex-col items-center gap-4 shadow-sm border border-slate-50 relative overflow-hidden">
+          <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/5 rounded-full opacity-[0.4]" />
+          
+          <div 
+            className="w-24 h-24 rounded-[28px] flex items-center justify-center border-4 border-white shadow-xl overflow-hidden relative z-10"
+            style={{ backgroundColor: theme.primary }}
+          >
+            {member.avatar_url ? (
+              <img src={member.avatar_url} alt={member.full_name} className="w-full h-full object-cover" />
+            ) : (
+              <User size={48} className="text-white" />
+            )}
+          </div>
+          
+          <div className="text-center relative z-10">
+            <h2 className="text-[24px] font-bold text-slate-800 bangla leading-tight">{member.full_name}</h2>
+            <div className="mt-2 inline-block px-4 py-1 rounded-full bg-slate-50 border border-slate-100">
+              <span className={`text-[12px] font-bold bangla`} style={{ color: member.role === 'admin' ? theme.primary : member.role === 'member' ? theme.primary : '#64748b' }}>
+                {member.role === 'admin' ? 'অ্যাডমিন (Admin)' : member.role === 'member' ? 'সদস্য (Member)' : 'অপেক্ষমান (Pending)'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Wallet Summary */}
+        {member.role !== 'pending' && (
+          <div className="flex flex-col gap-[12px]">
+            <div className="flex justify-between items-end px-2">
+              <h3 className="text-[14px] font-bold text-slate-400 bangla uppercase tracking-widest">ওয়ালেট ও সঞ্চয়</h3>
+              {isAdmin && (
+                <button 
+                  onClick={() => navigate(`/savings/deposit?memberId=${id}`)}
+                  className="flex items-center gap-1 text-[12px] font-bold bangla bg-primary/10 px-3 py-1.5 rounded-lg text-primary active:scale-95 transition-all"
+                  style={{ color: theme.primary, backgroundColor: `${theme.primary}1A` }}
+                >
+                  <Plus size={14} />
+                  টাকা জমা
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-white rounded-[24px] p-5 shadow-sm border border-slate-50 flex flex-col gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center">
+                  <Wallet size={20} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[11px] text-slate-400 bangla font-bold uppercase">বর্তমান ব্যালেন্স</span>
+                  <span className="text-[18px] font-bold text-slate-800">৳{wallet?.balance?.toLocaleString() || '0'}</span>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-[24px] p-5 shadow-sm border border-slate-50 flex flex-col gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center">
+                  <TrendingUp size={20} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[11px] text-slate-400 bangla font-bold uppercase">মোট জমা</span>
+                  <span className="text-[18px] font-bold text-slate-800">৳{wallet?.total_deposit?.toLocaleString() || '0'}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Transaction History */}
+            <div className="bg-white rounded-[24px] p-6 shadow-sm border border-slate-50 flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <History size={18} className="text-slate-400" />
+                  <h4 className="text-[15px] font-bold text-slate-700 bangla">লেনদেনের ইতিহাস</h4>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-4">
+                {transactions.length > 0 ? (
+                  transactions.map((tx) => (
+                    <div key={tx.id} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                          tx.transaction_type === 'savings' ? 'bg-emerald-50 text-emerald-500' : 
+                          tx.transaction_type === 'installment' ? 'bg-blue-50 text-blue-500' : 'bg-purple-50 text-purple-500'
+                        }`}>
+                          <Plus size={16} />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[13px] font-bold text-slate-700 bangla">
+                            {tx.transaction_type === 'savings' ? 'সঞ্চয়' : tx.transaction_type === 'installment' ? 'কিস্তি' : 'জমা'}
+                          </span>
+                          <span className="text-[10px] text-slate-400">
+                            {new Date(tx.created_at).toLocaleDateString('bn-BD')}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <span className="text-[14px] font-bold text-slate-800">+৳{tx.amount.toLocaleString()}</span>
+                        {tx.note && <span className="text-[10px] text-slate-400 bangla">{tx.note}</span>}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="py-8 flex flex-col items-center justify-center gap-2 opacity-40">
+                    <History size={32} />
+                    <p className="text-[12px] font-bold bangla">কোন লেনদেন পাওয়া যায়নি</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Info List */}
+        <div className="flex flex-col gap-[12px]">
+          <h3 className="text-[14px] font-bold text-slate-400 bangla px-2 uppercase tracking-widest">তথ্যসমূহ</h3>
+          
+          <div className="bg-white rounded-[22px] overflow-hidden shadow-sm border border-slate-50">
+            <div className="p-5 flex items-center gap-4 border-b border-slate-50 text-neutral-800">
+              <div className="bg-amber-50 p-3 rounded-[14px] text-amber-500">
+                <Shield size={20} />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] text-slate-400 bangla uppercase font-bold tracking-wider">পরিচিতি (Bio)</span>
+                <span className="text-[14px] font-bold text-slate-700 bangla leading-relaxed">
+                  {member.bio || 'কোন পরিচিতি যোগ করা হয়নি'}
+                </span>
+              </div>
+            </div>
+
+            <div className="p-5 flex items-center gap-4 border-b border-slate-50 text-neutral-800">
+              <div className="bg-blue-50 p-3 rounded-[14px] text-blue-500">
+                <Mail size={20} />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] text-slate-400 bangla uppercase font-bold tracking-wider">ইমেইল ঠিকানা</span>
+                <span className="text-[15px] font-bold text-slate-700">{member.email}</span>
+              </div>
+            </div>
+
+            <div className="p-5 flex items-center gap-4">
+              <div className="bg-purple-50 p-3 rounded-[14px] text-purple-500">
+                <Calendar size={20} />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] text-slate-400 bangla uppercase font-bold tracking-wider">নিবন্ধনের তারিখ</span>
+                <span className="text-[15px] font-bold text-slate-700">
+                  {new Date(member.created_at).toLocaleDateString('bn-BD', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                  })}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Admin Controls */}
+        {isAdmin && (
+          <div className="flex flex-col gap-[12px]">
+            <h3 className="text-[14px] font-bold text-slate-400 bangla px-2 uppercase tracking-widest">অ্যাডমিন কন্ট্রোল</h3>
+            
+            <div className="bg-white rounded-[22px] p-6 shadow-sm border border-slate-50 flex flex-col gap-6">
+              <div className="flex flex-col gap-3">
+                <span className="text-[13px] font-bold text-slate-500 bangla ml-1">রোল পরিবর্তন করুন</span>
+                <div className="flex flex-wrap gap-2">
+                  {member.role === 'pending' && (
+                    <button
+                      onClick={() => confirmRoleChange('member')}
+                      disabled={updating}
+                      className="flex-1 py-3 px-4 rounded-[14px] bangla text-[13px] font-bold transition-all bg-slate-50 text-slate-400 hover:bg-slate-100 border border-slate-100 active:scale-[0.98]"
+                    >
+                      সদস্য হিসেবে অনুমোদন দিন (Approve Member)
+                    </button>
+                  )}
+                  {member.role === 'member' && (
+                    <button
+                      onClick={() => confirmRoleChange('pending')}
+                      disabled={updating}
+                      className="flex-1 py-3 px-4 rounded-[14px] bangla text-[13px] font-bold transition-all bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-100 active:scale-[0.98]"
+                    >
+                      সদস্যপদ বাতিল করুন (Make Pending)
+                    </button>
+                  )}
+                  {member.role === 'admin' && (
+                    <div className="flex-1 p-4 bg-amber-50 rounded-[14px] border border-amber-100 flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
+                        <Shield size={16} className="text-amber-600" />
+                      </div>
+                      <span className="text-[13px] font-bold text-slate-700 bangla">অ্যাডমিন রোল পরিবর্তনযোগ্য নয়</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {message.text && (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className={`flex items-center gap-2 p-4 rounded-[14px] border ${
+                    message.type === 'success' 
+                      ? 'bg-primary/5 border-primary/10 text-primary' 
+                      : 'bg-red-50 border-red-100 text-red-500'
+                  }`}
+                >
+                  {message.type === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+                  <span className="text-[13px] bangla font-bold">{message.text}</span>
+                </motion.div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Confirmation Modal */}
+        {showConfirm && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowConfirm(false)}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              className="bg-white w-full max-w-[320px] rounded-[32px] p-6 shadow-2xl relative z-10 border border-slate-100 flex flex-col items-center text-center"
+            >
+              <div 
+                className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
+                style={{ backgroundColor: `${theme.primary}1A` }}
+              >
+                <Shield size={32} style={{ color: theme.primary }} />
+              </div>
+              
+              <h3 className="text-[18px] font-bold text-slate-800 bangla mb-2">আপনি কি নিশ্চিত?</h3>
+              <p className="text-[14px] text-slate-500 bangla leading-relaxed mb-6">
+                আপনি কি এই সদস্যের রোল <span className="font-bold underline" style={{ color: theme.primary }}>
+                  {pendingRole === 'admin' ? 'অ্যাডমিন' : pendingRole === 'member' ? 'সদস্য' : 'অপেক্ষমান'}
+                </span> হিসেবে পরিবর্তন করতে চান?
+              </p>
+
+              <div className="flex flex-col w-full gap-2">
+                <button
+                  onClick={handleRoleChange}
+                  className="w-full text-white py-3.5 rounded-2xl font-bold bangla text-[15px] shadow-lg shadow-black/5 active:scale-[0.98] transition-all"
+                  style={{ backgroundColor: theme.primary, boxShadow: `0 8px 20px -4px ${theme.primary}40` }}
+                >
+                  হ্যাঁ, পরিবর্তন করুন
+                </button>
+                <button
+                  onClick={() => setShowConfirm(false)}
+                  className="w-full bg-slate-50 text-slate-500 py-3.5 rounded-2xl font-bold bangla text-[15px] active:scale-[0.98] transition-all"
+                >
+                  বাতিল করুন
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+    </MobileLayout>
+  );
+}
