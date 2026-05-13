@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuthStore } from '../../store/useAuthStore';
-import { LayoutDashboard, Users, PiggyBank, Settings, Bell } from 'lucide-react';
+import { LayoutDashboard, Users, PiggyBank, Settings, Bell, TrendingUp } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 
 interface MobileLayoutProps {
@@ -51,14 +51,14 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children, showNav = 
             )}
             
             <NavLink 
-              to="/savings" 
+              to={isAdmin ? "/somobay/manage" : "/somobay/my"} 
               className={({ isActive }) => `relative flex flex-col items-center gap-1 transition-colors h-full pt-3 px-2 ${isActive ? 'text-primary' : 'text-slate-400 dark:text-slate-500'}`}
             >
               {({ isActive }) => (
                 <>
                   {isActive && <div className="absolute top-0 left-0 w-full h-[3px] bg-primary rounded-b-full" />}
-                  <PiggyBank size={24} />
-                  <span className="text-[12px] bangla font-bold">সঞ্চয়</span>
+                  <TrendingUp size={24} />
+                  <span className="text-[12px] bangla font-bold">সমবায়</span>
                 </>
               )}
             </NavLink>

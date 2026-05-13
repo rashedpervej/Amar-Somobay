@@ -391,7 +391,7 @@ export default function Dashboard() {
                   </div>
                   <div className="flex flex-col">
                     <span className="text-[16px] font-bold text-slate-800 dark:text-slate-100 bangla">
-                      {tx.transaction_type === 'savings' ? 'সঞ্চয় জমা' : 'লেনদেন'}
+                      {tx.transaction_type === 'savings' ? 'সঞ্চয় জমা' : tx.transaction_type === 'installment' ? 'কিস্তি জমা' : 'লেনদেন'}
                     </span>
                     <span className="text-[12px] text-slate-400 dark:text-slate-500 bangla font-medium">
                       {new Date(tx.created_at).toLocaleDateString('bn-BD', { day: 'numeric', month: 'long' })}
