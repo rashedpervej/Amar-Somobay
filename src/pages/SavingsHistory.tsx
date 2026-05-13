@@ -65,27 +65,29 @@ export default function SavingsHistory() {
 
       {!isAdmin && (
         /* Balance Overview Card - Only for Members */
-        <div className="bg-white dark:bg-slate-900 rounded-[28px] p-6 shadow-sm border border-slate-50 dark:border-slate-800 mb-8 mt-2">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-500 flex items-center justify-center">
-              <PiggyBank size={24} />
+        <div className="dark-card rounded-[32px] p-7 shadow-lg shadow-primary/5 mb-8 mt-2 overflow-hidden relative group">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl" />
+          
+          <div className="flex items-center gap-4 mb-8">
+            <div className="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+              <PiggyBank size={28} strokeWidth={2.5} />
             </div>
             <div className="flex flex-col">
-              <span className="text-[14px] text-slate-400 bangla font-medium">মোট ব্যালেন্স</span>
-              <span className="text-[24px] font-bold text-slate-800 dark:text-emerald-500 bangla leading-tight">
+              <span className="text-[13px] text-slate-400 dark:text-slate-500 bangla font-bold tracking-tight uppercase">মোট ব্যালেন্স</span>
+              <span className="text-[28px] font-black text-slate-800 dark:text-emerald-500 bangla leading-tight drop-shadow-sm">
                 ৳{wallet?.balance?.toLocaleString() || '০'}
               </span>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-6 pt-4 border-t border-slate-50 dark:border-slate-800">
-             <div className="flex flex-col">
-               <span className="text-[12px] text-slate-400 bangla mb-0.5">মোট জমা</span>
-               <span className="text-[16px] font-bold text-slate-700 dark:text-slate-200 bangla">৳{wallet?.total_deposit?.toLocaleString() || '০'}</span>
+          <div className="grid grid-cols-2 gap-8 pt-5 border-t border-slate-100 dark:border-white/5">
+             <div className="flex flex-col gap-1">
+               <span className="text-[11px] text-slate-400 dark:text-slate-500 bangla uppercase font-bold tracking-wider">মোট জমা</span>
+               <span className="text-[18px] font-extrabold text-slate-800 dark:text-slate-100 bangla">৳{wallet?.total_deposit?.toLocaleString() || '০'}</span>
              </div>
-             <div className="flex flex-col">
-               <span className="text-[12px] text-slate-400 bangla mb-0.5">বকেয়া</span>
-               <span className="text-[16px] font-bold text-orange-500 bangla">৳০</span>
+             <div className="flex flex-col gap-1 border-l border-slate-100 dark:border-white/5 pl-8">
+               <span className="text-[11px] text-slate-400 dark:text-slate-500 bangla uppercase font-bold tracking-wider">বকেয়া</span>
+               <span className="text-[18px] font-extrabold text-orange-500 bangla">৳০</span>
              </div>
           </div>
         </div>
@@ -115,15 +117,15 @@ export default function SavingsHistory() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
-                className="bg-white dark:bg-slate-900 p-4 rounded-[24px] flex flex-col gap-3 border border-slate-50 dark:border-slate-800 shadow-sm"
+                className="dark-card p-4 rounded-[28px] flex flex-col gap-3 shadow-sm hover:translate-y-[-2px] transition-all cursor-pointer active:scale-[0.98]"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${getTxTypeColor(tx.transaction_type)}`}>
-                      {tx.transaction_type === 'savings' || tx.transaction_type === 'deposit' ? <ArrowDownLeft size={22} /> : <ArrowUpRight size={22} />}
+                      {tx.transaction_type === 'savings' || tx.transaction_type === 'deposit' ? <ArrowDownLeft size={22} strokeWidth={2.5} /> : <ArrowUpRight size={22} strokeWidth={2.5} />}
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-[16px] font-bold text-slate-800 dark:text-slate-100 bangla">
+                      <span className="text-[16px] font-bold text-slate-800 dark:text-slate-100 bangla leading-none mb-1">
                         {getTxTypeLabel(tx.transaction_type)}
                       </span>
                       <span className="text-[12px] text-slate-400 dark:text-slate-500 bangla font-medium">
@@ -132,14 +134,14 @@ export default function SavingsHistory() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className={`text-[18px] font-black bangla ${tx.transaction_type === 'savings' || tx.transaction_type === 'deposit' ? 'text-emerald-500' : 'text-slate-700 dark:text-slate-200'}`}>
+                    <span className={`text-[17px] font-black bangla ${tx.transaction_type === 'savings' || tx.transaction_type === 'deposit' ? 'text-emerald-500' : 'text-slate-700 dark:text-slate-200'}`}>
                       {tx.transaction_type === 'savings' || tx.transaction_type === 'deposit' ? '+' : '-'}৳{tx.amount.toLocaleString()}
                     </span>
                   </div>
                 </div>
 
                 {(isAdmin || tx.note) && (
-                  <div className="pt-3 border-t border-slate-50 dark:border-slate-800 flex items-center justify-between">
+                  <div className="pt-3 border-t border-slate-100 dark:border-white/5 flex items-center justify-between">
                     {isAdmin && (
                       <div className="flex items-center gap-1.5">
                         <div className="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">

@@ -42,54 +42,54 @@ export default function Signup() {
   return (
     <div className="mobile-container flex flex-col p-8">
       <div className="mt-8 mb-8">
-        <h1 className="text-3xl font-bold text-slate-800 bangla">সদস্য হন</h1>
-        <p className="text-slate-500 bangla mt-2">আপনার তথ্য দিয়ে একাউন্ট তৈরি করুন</p>
+        <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100 bangla">সদস্য হন</h1>
+        <p className="text-slate-500 dark:text-slate-400 bangla mt-2">আপনার তথ্য দিয়ে একাউন্ট তৈরি করুন</p>
       </div>
 
       <form onSubmit={handleSignup} className="flex flex-col gap-5">
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-semibold text-slate-600 bangla ml-1">পূর্ণ নাম</label>
+          <label className="text-sm font-semibold text-slate-600 dark:text-slate-400 bangla ml-1">পূর্ণ নাম</label>
           <div className="relative">
-            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-600" size={20} />
             <input
               type="text"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder="আপনার নাম লিখুন"
-              className="w-full bg-white border border-slate-200 rounded-2xl py-4 pl-12 pr-4 outline-none transition-all bangla focus:ring-4"
-              style={{ '--tw-ring-color': `${theme.primary}0D`, borderColor: fullName ? theme.primary : '#e2e8f0' } as any}
+              className="w-full bg-white dark:bg-white/5 border border-slate-200 dark:border-white/5 rounded-2xl py-4 pl-12 pr-4 outline-none transition-all bangla text-slate-800 dark:text-slate-100 focus:ring-4"
+              style={{ '--tw-ring-color': `${theme.primary}0D` } as any}
               required
             />
           </div>
         </div>
 
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-semibold text-slate-600 bangla ml-1">ইমেইল</label>
+          <label className="text-sm font-semibold text-slate-600 dark:text-slate-400 bangla ml-1">ইমেইল</label>
           <div className="relative">
-            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-600" size={20} />
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="example@mail.com"
-              className="w-full bg-white border border-slate-200 rounded-2xl py-4 pl-12 pr-4 outline-none transition-all font-sans focus:ring-4"
-              style={{ '--tw-ring-color': `${theme.primary}0D`, borderColor: email ? theme.primary : '#e2e8f0' } as any}
+              className="w-full bg-white dark:bg-white/5 border border-slate-200 dark:border-white/5 rounded-2xl py-4 pl-12 pr-4 outline-none transition-all font-sans text-slate-800 dark:text-slate-100 focus:ring-4"
+              style={{ '--tw-ring-color': `${theme.primary}0D` } as any}
               required
             />
           </div>
         </div>
 
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-semibold text-slate-600 bangla ml-1">পাসওয়ার্ড</label>
+          <label className="text-sm font-semibold text-slate-600 dark:text-slate-400 bangla ml-1">পাসওয়ার্ড</label>
           <div className="relative">
-            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-600" size={20} />
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full bg-white border border-slate-200 rounded-2xl py-4 pl-12 pr-4 outline-none transition-all font-sans focus:ring-4"
-              style={{ '--tw-ring-color': `${theme.primary}0D`, borderColor: password ? theme.primary : '#e2e8f0' } as any}
+              className="w-full bg-white dark:bg-white/5 border border-slate-200 dark:border-white/5 rounded-2xl py-4 pl-12 pr-4 outline-none transition-all font-sans text-slate-800 dark:text-slate-100 focus:ring-4"
+              style={{ '--tw-ring-color': `${theme.primary}0D` } as any}
               required
               minLength={6}
             />
@@ -100,7 +100,7 @@ export default function Signup() {
           <motion.div 
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-2 text-red-500 bg-red-50 p-4 rounded-xl border border-red-100"
+            className="flex items-center gap-2 text-red-500 dark:text-rose-400 bg-red-50 dark:bg-rose-500/10 p-4 rounded-xl border border-red-100 dark:border-rose-500/20"
           >
             <AlertCircle size={18} />
             <span className="text-xs bangla">{error}</span>
@@ -124,8 +124,8 @@ export default function Signup() {
         </button>
       </form>
 
-      <div className="mt-8 mb-8 text-center bg-white p-4 rounded-2xl border border-slate-100">
-        <p className="text-slate-500 text-sm bangla">
+      <div className="mt-8 mb-8 text-center dark-card p-4 rounded-2xl">
+        <p className="text-slate-500 dark:text-slate-400 text-sm bangla">
           ইতিমধ্যে একাউন্ট আছে?{' '}
           <Link to="/login" className="font-bold ml-1 hover:underline" style={{ color: theme.primary }}>
             লগইন করুন

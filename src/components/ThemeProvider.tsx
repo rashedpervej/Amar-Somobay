@@ -48,6 +48,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     const root = window.document.documentElement;
     root.classList.remove('light', 'dark');
     root.classList.add(mode);
+    root.style.colorScheme = mode;
   }, [mode]);
 
   const theme = useMemo(() => {

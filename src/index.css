@@ -1,6 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Tiro+Bangla:ital@0;1&family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: "Inter", "Tiro Bangla", ui-sans-serif, system-ui, sans-serif;
   --font-bangla: "Tiro Bangla", serif;
@@ -13,6 +15,12 @@
   --color-text-secondary: var(--text-secondary, #64748b);
   --color-device-frame: #1e293b;
 
+  /* Dark theme overrides */
+  --color-dark-bg: #0b0f1a;
+  --color-dark-card: #151c2c;
+  --color-dark-border: rgba(255, 255, 255, 0.05);
+  --color-dark-hover: rgba(255, 255, 255, 0.03);
+
   --spacing-main: 16px;
   --spacing-card: 16px;
   --spacing-gap: 12px;
@@ -24,12 +32,16 @@
 
 @layer base {
   body {
-    @apply bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans min-h-screen m-0 p-0 overflow-x-hidden transition-colors duration-300;
+    @apply bg-white dark:bg-[var(--color-dark-bg)] text-slate-900 dark:text-slate-100 font-sans min-h-screen m-0 p-0 overflow-x-hidden transition-all duration-500;
   }
 }
 
 .mobile-container {
-  @apply w-full max-w-[420px] min-h-screen bg-card-bg relative flex flex-col mx-auto overflow-y-auto transition-colors duration-300;
+  @apply w-full max-w-[420px] min-h-screen bg-slate-50 dark:bg-[var(--color-dark-bg)] relative flex flex-col mx-auto overflow-y-auto transition-all duration-300;
+}
+
+.dark-card {
+  @apply bg-white dark:bg-[var(--color-dark-card)] border border-transparent dark:border-[var(--color-dark-border)] shadow-sm dark:shadow-none transition-all duration-300;
 }
 
 .bangla {

@@ -81,25 +81,25 @@ export default function Security() {
 
   return (
     <MobileLayout>
-      <div className="flex items-center gap-4 mb-8 text-neutral-800">
+      <div className="flex items-center gap-4 mb-8 text-neutral-800 dark:text-neutral-100">
         <button 
           onClick={() => navigate(-1)}
-          className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 active:scale-90 transition-transform shadow-sm"
+          className="w-10 h-10 rounded-xl bg-white/80 dark:bg-[#1e293b]/60 border border-slate-100 dark:border-white/5 flex items-center justify-center text-slate-400 dark:text-slate-500 active:scale-95 transition-all shadow-sm backdrop-blur-md"
         >
-          <ChevronLeft size={20} />
+          <ChevronLeft size={20} strokeWidth={2.5} />
         </button>
         <h1 className="text-[20px] font-bold bangla">নিরাপত্তা (Security)</h1>
       </div>
 
       <div className="flex flex-col gap-6">
         {/* Info Card */}
-        <div className="bg-amber-50 border border-amber-100 rounded-[22px] p-5 flex gap-4">
-          <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
-            <AlertCircle className="text-amber-600" size={20} />
+        <div className="bg-amber-50 dark:bg-amber-500/5 border border-amber-100 dark:border-amber-500/10 rounded-[22px] p-5 flex gap-4">
+          <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-500/10 flex items-center justify-center shrink-0">
+            <AlertCircle className="text-amber-600 dark:text-amber-500" size={20} />
           </div>
           <div className="flex flex-col gap-1">
-            <h3 className="text-[14px] font-bold text-amber-900 bangla">সতর্কতা</h3>
-            <p className="text-[12px] text-amber-700/80 bangla leading-relaxed">
+            <h3 className="text-[14px] font-bold text-amber-900 dark:text-amber-200 bangla">সতর্কতা</h3>
+            <p className="text-[12px] text-amber-700/80 dark:text-amber-500/80 bangla leading-relaxed">
               পাসওয়ার্ড পরিবর্তন করার জন্য অবশ্যই আপনার বর্তমান (পুরাতন) পাসওয়ার্ড দিতে হবে।
             </p>
           </div>
@@ -107,56 +107,56 @@ export default function Security() {
 
         {/* Form Section */}
         <form onSubmit={handleSave} className="flex flex-col gap-5 pb-10">
-          <div className="bg-white rounded-[22px] p-6 shadow-sm border border-slate-50 flex flex-col gap-5 text-neutral-800">
+          <div className="dark-card rounded-[22px] p-6 flex flex-col gap-5">
             <div className="flex items-center gap-3 mb-1">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${theme.primary}1A` }}>
                 <Shield size={20} style={{ color: theme.primary }} />
               </div>
-              <h3 className="text-[16px] font-bold bangla text-slate-700">পাসওয়ার্ড পরিবর্তন</h3>
+              <h3 className="text-[16px] font-bold bangla text-slate-700 dark:text-slate-200">পাসওয়ার্ড পরিবর্তন</h3>
             </div>
 
             {/* Old Password */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-[13px] font-bold text-slate-500 bangla ml-1">পুরাতন পাসওয়ার্ড</label>
+              <label className="text-[13px] font-bold text-slate-500 dark:text-slate-400 bangla ml-1">পুরাতন পাসওয়ার্ড</label>
               <div className="relative flex items-center">
                 <input 
                   type={showOld ? "text" : "password"} 
                   value={formData.oldPassword}
                   onChange={e => setFormData(p => ({ ...p, oldPassword: e.target.value }))}
                   placeholder="বর্তমান পাসওয়ার্ড দিন"
-                  className="w-full bg-slate-50 border border-slate-100 rounded-[14px] px-4 py-3.5 pl-11 pr-11 text-[14px] outline-none transition-all focus:ring-4"
-                  style={{ '--tw-ring-color': `${theme.primary}0D`, borderColor: formData.oldPassword ? theme.primary : '#f1f5f9' } as any}
+                  className="w-full bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5 rounded-[14px] px-4 py-3.5 pl-11 pr-11 text-[14px] outline-none transition-all focus:ring-4 text-slate-800 dark:text-slate-100"
+                  style={{ '--tw-ring-color': `${theme.primary}0D` } as any}
                 />
-                <Lock className="absolute left-4 text-slate-300" size={18} />
+                <Lock className="absolute left-4 text-slate-300 dark:text-slate-600" size={18} />
                 <button 
                   type="button"
                   onClick={() => setShowOld(!showOld)}
-                  className="absolute right-4 text-slate-400"
+                  className="absolute right-4 text-slate-400 dark:text-slate-600 hover:text-slate-500 transition-colors"
                 >
                   {showOld ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
             </div>
 
-            <div className="h-px bg-slate-50 w-full" />
+            <div className="h-px bg-slate-50 dark:bg-white/5 w-full" />
 
             {/* New Password */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-[13px] font-bold text-slate-500 bangla ml-1">নতুন পাসওয়ার্ড</label>
+              <label className="text-[13px] font-bold text-slate-500 dark:text-slate-400 bangla ml-1">নতুন পাসওয়ার্ড</label>
               <div className="relative flex items-center">
                 <input 
                   type={showNew ? "text" : "password"} 
                   value={formData.newPassword}
                   onChange={e => setFormData(p => ({ ...p, newPassword: e.target.value }))}
                   placeholder="নতুন পাসওয়ার্ড লিখুন"
-                  className="w-full bg-slate-50 border border-slate-100 rounded-[14px] px-4 py-3.5 pl-11 pr-11 text-[14px] outline-none transition-all focus:ring-4"
-                  style={{ '--tw-ring-color': `${theme.primary}0D`, borderColor: formData.newPassword ? theme.primary : '#f1f5f9' } as any}
+                  className="w-full bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5 rounded-[14px] px-4 py-3.5 pl-11 pr-11 text-[14px] outline-none transition-all focus:ring-4 text-slate-800 dark:text-slate-100"
+                  style={{ '--tw-ring-color': `${theme.primary}0D` } as any}
                 />
-                <Lock className="absolute left-4 text-slate-300" size={18} />
+                <Lock className="absolute left-4 text-slate-300 dark:text-slate-600" size={18} />
                 <button 
                   type="button"
                   onClick={() => setShowNew(!showNew)}
-                  className="absolute right-4 text-slate-400"
+                  className="absolute right-4 text-slate-400 dark:text-slate-600 hover:text-slate-500 transition-colors"
                 >
                   {showNew ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -165,17 +165,17 @@ export default function Security() {
 
             {/* Confirm Password */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-[13px] font-bold text-slate-500 bangla ml-1">নতুন পাসওয়ার্ড নিশ্চিত করুন</label>
+              <label className="text-[13px] font-bold text-slate-500 dark:text-slate-400 bangla ml-1">নতুন পাসওয়ার্ড নিশ্চিত করুন</label>
               <div className="relative flex items-center">
                 <input 
                   type={showNew ? "text" : "password"} 
                   value={formData.confirmPassword}
                   onChange={e => setFormData(p => ({ ...p, confirmPassword: e.target.value }))}
                   placeholder="আবারও লিখুন"
-                  className="w-full bg-slate-50 border border-slate-100 rounded-[14px] px-4 py-3.5 pl-11 text-[14px] outline-none transition-all focus:ring-4"
-                  style={{ '--tw-ring-color': `${theme.primary}0D`, borderColor: formData.confirmPassword === formData.newPassword && formData.confirmPassword ? theme.primary : '#f1f5f9' } as any}
+                  className="w-full bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5 rounded-[14px] px-4 py-3.5 pl-11 text-[14px] outline-none transition-all focus:ring-4 text-slate-800 dark:text-slate-100"
+                  style={{ '--tw-ring-color': `${theme.primary}0D` } as any}
                 />
-                <Shield className="absolute left-4 text-slate-300" size={18} />
+                <Shield className="absolute left-4 text-slate-300 dark:text-slate-600" size={18} />
               </div>
             </div>
           </div>
@@ -187,7 +187,7 @@ export default function Security() {
               className={`flex items-center gap-2 p-4 rounded-[14px] border transition-all ${
                 message.type === 'success' 
                   ? 'text-primary' 
-                  : 'bg-rose-50 border-rose-100 text-rose-500'
+                  : 'bg-rose-50 dark:bg-rose-500/10 border-rose-100 dark:border-rose-500/20 text-rose-500 dark:text-rose-400'
               }`}
               style={{ 
                 backgroundColor: message.type === 'success' ? `${theme.primary}0D` : undefined,
@@ -202,10 +202,10 @@ export default function Security() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full text-white h-[60px] rounded-[22px] font-bold bangla text-[16px] flex items-center justify-center gap-2 shadow-xl active:scale-[0.98] transition-all disabled:opacity-50"
+            className="w-full text-white h-[60px] rounded-[22px] font-extrabold bangla text-[16px] flex items-center justify-center gap-2 shadow-xl active:scale-[0.98] transition-all disabled:opacity-50"
             style={{ backgroundColor: theme.primary, boxShadow: `0 15px 25px -5px ${theme.primary}33` }}
           >
-            {loading ? <Loader2 className="animate-spin" size={24} /> : <Save size={24} />}
+            {loading ? <Loader2 className="animate-spin" size={24} /> : <Save size={24} strokeWidth={2.5} />}
             পাসওয়ার্ড পরিবর্তন করুন
           </button>
         </form>

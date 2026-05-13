@@ -166,12 +166,12 @@ export default function Dashboard() {
       </div>
       <button 
         onClick={() => navigate('/notifications')}
-        className="bg-white dark:bg-slate-800 p-2.5 rounded-full shadow-sm border border-slate-100 dark:border-slate-700 text-slate-400 dark:text-slate-300 active:scale-95 transition-transform relative"
+        className="bg-white/80 dark:bg-[#1e293b]/60 p-2.5 rounded-2xl shadow-sm border border-slate-200 dark:border-white/5 text-slate-500 dark:text-slate-400 active:scale-95 transition-all relative backdrop-blur-md"
       >
-        <Bell size={22} />
+        <Bell size={22} strokeWidth={2.2} />
         {unreadCount > 0 && (
           <div 
-            className="absolute top-0 right-0 w-5 h-5 rounded-full border-2 border-white dark:border-slate-800 flex items-center justify-center text-[10px] font-bold text-white shadow-sm"
+            className="absolute -top-1 -right-1 w-5 h-5 rounded-full border-2 border-white dark:border-[#0b0f1a] flex items-center justify-center text-[10px] font-extrabold text-white shadow-lg animate-pulse"
             style={{ backgroundColor: theme.primary }}
           >
             {unreadCount > 9 ? '9+' : unreadCount}
@@ -303,39 +303,39 @@ export default function Dashboard() {
         animate={{ opacity: 1, y: 0 }}
         whileHover={{ scale: 1.01 }}
         whileTap={{ scale: 0.98 }}
-        className="w-full mt-6 rounded-[32px] overflow-hidden shadow-xl shadow-primary/20 relative cursor-pointer group"
+        className="w-full mt-6 rounded-[34px] overflow-hidden shadow-2xl shadow-primary/25 relative cursor-pointer group"
         style={{ 
           background: `linear-gradient(225deg, ${theme.primary}, ${theme.secondary}, ${theme.primary})`,
         }}
       >
         {/* Decorative elements */}
-        <div className="absolute top-0 right-0 w-48 h-48 bg-white/20 rounded-full -mr-20 -mt-20 blur-3xl transition-transform duration-700 group-hover:scale-110" />
-        <div className="absolute bottom-0 left-0 w-32 h-32 bg-black/10 rounded-full -ml-12 -mb-12 blur-2xl" />
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/25 rounded-full -mr-32 -mt-32 blur-3xl transition-all duration-1000 group-hover:bg-white/30" />
+        <div className="absolute bottom-0 left-0 w-40 h-40 bg-black/20 rounded-full -ml-20 -mb-20 blur-3xl opacity-60" />
         
-        <div className="p-7 text-white relative z-10">
-          <div className="flex justify-between items-start mb-8">
-            <div className="flex flex-col">
-              <span className="text-[14px] bangla font-semibold text-white/90 tracking-wide">মোট ব্যালেন্স</span>
-              <div className="h-0.5 w-8 bg-white/40 rounded-full mt-1" />
+        <div className="p-8 text-white relative z-10">
+          <div className="flex justify-between items-start mb-10">
+            <div className="flex flex-col gap-1">
+              <span className="text-[13px] bangla font-bold text-white/90 uppercase tracking-widest opacity-80">আমার ব্যালেন্স</span>
+              <div className="h-0.5 w-8 bg-white/50 rounded-full" />
             </div>
-            <div className="bg-white/20 backdrop-blur-md px-3.5 py-1.5 rounded-2xl flex items-center gap-2 border border-white/20 shadow-sm">
+            <div className="bg-white/20 backdrop-blur-xl px-4 py-1.5 rounded-2xl flex items-center gap-2 border border-white/25 shadow-sm">
               <Activity size={14} className="animate-pulse" />
-              <span className="text-[12px] bangla font-bold tracking-tight">সক্রিয়</span>
+              <span className="text-[11px] bangla font-black tracking-tighter uppercase">সক্রিয়</span>
             </div>
           </div>
           
-          <div className="flex items-baseline gap-1.5 mb-8">
-            <span className="text-[44px] font-black bangla leading-none">৳{wallet?.balance?.toLocaleString() || '০'}</span>
+          <div className="flex items-baseline gap-2 mb-10">
+            <span className="text-[48px] font-black bangla leading-none drop-shadow-md">৳{wallet?.balance?.toLocaleString() || '০'}</span>
           </div>
           
-          <div className="grid grid-cols-2 gap-4 pt-5 border-t border-white/15">
-            <div className="flex flex-col gap-0.5">
-              <span className="text-[12px] bangla text-white/80 font-medium">সঞ্চয় জমা</span>
-              <span className="text-[18px] font-extrabold bangla">৳{wallet?.total_deposit?.toLocaleString() || '০'}</span>
+          <div className="grid grid-cols-2 gap-6 pt-6 border-t border-white/20">
+            <div className="flex flex-col gap-1">
+              <span className="text-[12px] bangla text-white/80 font-bold uppercase tracking-tight opacity-75">সঞ্চয় জমা</span>
+              <span className="text-[20px] font-black bangla tracking-tight leading-none">৳{wallet?.total_deposit?.toLocaleString() || '০'}</span>
             </div>
-            <div className="flex flex-col gap-0.5 border-l border-white/10 pl-4">
-              <span className="text-[12px] bangla text-white/80 font-medium">বকেয়া পরিমাণ</span>
-              <span className="text-[18px] font-extrabold bangla">৳০</span>
+            <div className="flex flex-col gap-1 border-l border-white/10 pl-6">
+              <span className="text-[12px] bangla text-white/80 font-bold uppercase tracking-tight opacity-75">বকেয়া কিস্তি</span>
+              <span className="text-[20px] font-black bangla tracking-tight leading-none">৳০</span>
             </div>
           </div>
         </div>
@@ -346,10 +346,10 @@ export default function Dashboard() {
         <h2 className="text-[18px] font-bold text-slate-800 dark:text-slate-200 bangla px-1">দ্রুত কার্যক্রম</h2>
         <div className="grid grid-cols-4 gap-3">
           {[
-            { id: 'history', title: 'সঞ্চয় ইতিহাস', icon: <History />, color: 'bg-emerald-50 text-emerald-500', path: '/savings' },
-            { id: 'somobay', title: 'সমবায় প্ল্যান', icon: <TrendingUp />, color: 'bg-orange-50 text-orange-500', path: '/somobay/my' },
-            { id: 'profile', title: 'প্রোফাইল', icon: <User />, color: 'bg-indigo-50 text-indigo-500', path: '/settings/profile' },
-            { id: 'notifications', title: 'বিজ্ঞপ্তি', icon: <Bell />, color: 'bg-purple-50 text-purple-500', path: '/notifications' },
+            { id: 'history', title: 'সঞ্চয় ইতিহাস', icon: <History />, color: 'bg-emerald-50 text-emerald-500 dark:bg-emerald-500/10 dark:text-emerald-400', path: '/savings' },
+            { id: 'somobay', title: 'সমবায় প্ল্যান', icon: <TrendingUp />, color: 'bg-orange-50 text-orange-500 dark:bg-orange-500/10 dark:text-orange-400', path: '/somobay/my' },
+            { id: 'profile', title: 'প্রোফাইল', icon: <User />, color: 'bg-indigo-50 text-indigo-500 dark:bg-indigo-500/10 dark:text-indigo-400', path: '/settings/profile' },
+            { id: 'notifications', title: 'বিজ্ঞপ্তি', icon: <Bell />, color: 'bg-purple-50 text-purple-500 dark:bg-purple-500/10 dark:text-purple-400', path: '/notifications' },
           ].map((action, i) => (
             <motion.button
               key={action.id + i}
@@ -357,12 +357,12 @@ export default function Dashboard() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: i * 0.05 }}
               onClick={() => navigate(action.path)}
-              className="flex flex-col items-center gap-2"
+              className="flex flex-col items-center gap-2 group"
             >
-              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm border border-slate-50 dark:border-slate-800 ${action.color}`}>
-                {React.cloneElement(action.icon as React.ReactElement, { size: 24 })}
+              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm border border-slate-100 dark:border-white/5 transition-all group-active:scale-90 ${action.color}`}>
+                {React.cloneElement(action.icon as React.ReactElement, { size: 24, strokeWidth: 2 })}
               </div>
-              <span className="text-[12px] font-bold text-slate-600 dark:text-slate-400 bangla">{action.title}</span>
+              <span className="text-[12px] font-bold text-slate-600 dark:text-slate-400/80 bangla truncate w-full text-center">{action.title}</span>
             </motion.button>
           ))}
         </div>
@@ -383,14 +383,14 @@ export default function Dashboard() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.1 }}
-                className="bg-white dark:bg-slate-900 p-4 rounded-[20px] flex items-center justify-between border border-slate-50 dark:border-slate-800 shadow-sm"
+                className="dark-card p-4 rounded-[24px] flex items-center justify-between shadow-sm active:scale-[0.98] cursor-pointer"
               >
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${tx.transaction_type === 'savings' ? 'bg-emerald-50 text-emerald-500' : 'bg-blue-50 text-blue-500'}`}>
-                    {tx.transaction_type === 'savings' ? <ArrowDownLeft size={20} /> : <ArrowUpRight size={20} />}
+                  <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${tx.transaction_type === 'savings' ? 'bg-emerald-50 text-emerald-500 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-blue-50 text-blue-500 dark:bg-blue-500/10 dark:text-blue-400'}`}>
+                    {tx.transaction_type === 'savings' ? <ArrowDownLeft size={20} strokeWidth={2.5} /> : <ArrowUpRight size={20} strokeWidth={2.5} />}
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-[16px] font-bold text-slate-800 dark:text-slate-100 bangla">
+                    <span className="text-[16px] font-bold text-slate-800 dark:text-slate-100 bangla leading-none mb-1">
                       {tx.transaction_type === 'savings' ? 'সঞ্চয় জমা' : tx.transaction_type === 'installment' ? 'কিস্তি জমা' : 'লেনদেন'}
                     </span>
                     <span className="text-[12px] text-slate-400 dark:text-slate-500 bangla font-medium">
@@ -398,9 +398,11 @@ export default function Dashboard() {
                     </span>
                   </div>
                 </div>
-                <span className="text-[17px] font-bold text-emerald-500 bangla">
-                  +৳{tx.amount.toLocaleString()}
-                </span>
+                <div className="flex flex-col items-end">
+                  <span className="text-[17px] font-extrabold text-emerald-500 dark:text-emerald-400 bangla">
+                    +৳{tx.amount.toLocaleString()}
+                  </span>
+                </div>
               </motion.div>
             ))
           ) : (
