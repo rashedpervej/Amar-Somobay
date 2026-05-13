@@ -51,21 +51,21 @@ export default function Notifications() {
 
   return (
     <MobileLayout>
-      <div className="flex items-center justify-between mb-6 text-neutral-800 dark:text-neutral-100">
+      <div className="flex items-center justify-between mb-8 text-neutral-800 dark:text-neutral-100">
         <div className="flex items-center gap-4">
           <button 
             onClick={() => navigate(-1)}
-            className="w-10 h-10 rounded-xl bg-white/80 dark:bg-[#1e293b]/60 border border-slate-100 dark:border-white/5 flex items-center justify-center text-slate-400 dark:text-slate-500 active:scale-95 transition-all shadow-sm backdrop-blur-md"
+            className="w-10 h-10 rounded-xl bg-white dark:bg-[#1e293b]/60 border border-slate-100 dark:border-white/5 flex items-center justify-center text-slate-400 dark:text-slate-500 active:scale-95 transition-all shadow-sm backdrop-blur-md"
           >
             <ChevronLeft size={20} strokeWidth={2.5} />
           </button>
-          <h1 className="text-[20px] font-bold bangla">নোটিফিকেশন</h1>
+          <h1 className="text-[22px] font-bold bangla tracking-tight">নোটিফিকেশন</h1>
         </div>
 
         {notifications.some(n => !n.is_read) && (
           <button 
             onClick={handleMarkAll}
-            className="text-[12px] font-extrabold bangla px-4 py-2 rounded-xl transition-all active:scale-95"
+            className="text-[12px] font-extrabold bangla px-4 py-2 rounded-xl transition-all active:scale-95 shadow-lg shadow-primary/5"
             style={{ color: theme.primary, backgroundColor: `${theme.primary}1A` }}
           >
             সব পড়া হয়েছে
@@ -73,7 +73,7 @@ export default function Notifications() {
         )}
       </div>
 
-      <div className="flex flex-col gap-3 pb-24">
+      <div className="flex flex-col gap-[14px] pb-24">
         <AnimatePresence mode="popLayout">
           {notifications.length > 0 ? (
             notifications.map((notification, index) => (

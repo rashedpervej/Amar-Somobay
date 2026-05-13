@@ -81,7 +81,11 @@ export default function AppSettings() {
       await updateSettings(formData);
       setMessage({ text: 'সেটিংস সফলভাবে সংরক্ষিত হয়েছে', type: 'success' });
     } catch (error: any) {
-      setMessage({ text: 'সেটিংস সংরক্ষণে সমস্যা হয়েছে', type: 'error' });
+      console.error('Settings save error:', error);
+      setMessage({ 
+        text: `সেটিংস সংরক্ষণে সমস্যা হয়েছে: ${error.message || 'Unknown Error'}`, 
+        type: 'error' 
+      });
     } finally {
       setLoading(false);
     }
