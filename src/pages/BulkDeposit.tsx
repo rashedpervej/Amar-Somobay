@@ -147,6 +147,8 @@ export default function BulkDeposit() {
       });
       
       setMessage({ text: `${selectedIds.length} জন সদস্যের লেনদেন সফলভাবে সম্পন্ন হয়েছে`, type: 'success' });
+      setFormData({ amount: '', type: 'savings', note: 'মাসিক সঞ্চয়' });
+      setSelectedIds([]);
     } catch (err: any) {
       setMessage({ text: err.message || 'Error processing bulk deposit', type: 'error' });
     } finally {
@@ -156,10 +158,10 @@ export default function BulkDeposit() {
 
   return (
     <MobileLayout>
-      <div className="flex items-center gap-4 mb-6 text-neutral-800">
+      <div className="flex items-center gap-4 mb-6 text-neutral-800 dark:text-neutral-100">
         <button 
           onClick={() => navigate(-1)}
-          className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 active:scale-90 transition-transform shadow-sm"
+          className="w-10 h-10 rounded-xl bg-white dark:bg-[#1e293b]/60 border border-slate-100 dark:border-white/5 flex items-center justify-center text-slate-400 dark:text-slate-500 active:scale-90 transition-transform shadow-sm backdrop-blur-md"
         >
           <ChevronLeft size={20} />
         </button>
@@ -168,17 +170,17 @@ export default function BulkDeposit() {
 
       <div className="flex flex-col gap-5 pb-24">
         {/* Step 1: Filters & Selection */}
-        <div className="bg-white rounded-[32px] p-6 shadow-sm border border-slate-50 flex flex-col gap-5">
+        <div className="dark-card rounded-[32px] p-6 flex flex-col gap-5">
           <div className="flex items-center gap-2 px-1">
-            <Filter size={16} className="text-slate-400" />
-            <h3 className="text-[14px] font-bold text-slate-700 bangla">সদস্য বাছাই করুন</h3>
+            <Filter size={16} className="text-slate-400 dark:text-slate-600" />
+            <h3 className="text-[14px] font-bold text-slate-700 dark:text-slate-200 bangla">সদস্য বাছাই করুন</h3>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <select 
               value={statusFilter}
               onChange={e => setStatusFilter(e.target.value)}
-              className="bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-[13px] font-bold bangla outline-none"
+              className="bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-xl px-4 py-3 text-[13px] font-bold bangla outline-none text-slate-700 dark:text-slate-300"
             >
               <option value="all">সকল স্ট্যাটাস</option>
               <option value="active">সক্রিয় সদস্য</option>
@@ -187,7 +189,7 @@ export default function BulkDeposit() {
             <select 
               value={categoryFilter}
               onChange={e => setCategoryFilter(e.target.value)}
-              className="bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-[13px] font-bold bangla outline-none"
+              className="bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-xl px-4 py-3 text-[13px] font-bold bangla outline-none text-slate-700 dark:text-slate-300"
             >
               <option value="all">সকল ক্যাটাগরি</option>
               <option value="General">General</option>
@@ -196,36 +198,36 @@ export default function BulkDeposit() {
           </div>
 
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600" size={18} />
             <input 
               type="text"
               placeholder="নাম দিয়ে খুঁজুন..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-100 rounded-[18px] px-11 py-4 text-[14px] outline-none"
+              className="w-full bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-[18px] px-11 py-4 text-[14px] dark:text-neutral-200 outline-none placeholder:text-slate-300 dark:placeholder:text-slate-700"
             />
           </div>
 
-          <div className="border-t border-slate-50 pt-4 flex items-center justify-between px-1">
+          <div className="border-t border-slate-50 dark:border-white/5 pt-4 flex items-center justify-between px-1">
             <button 
               onClick={toggleSelectAll}
-              className="flex items-center gap-2 text-[13px] font-bold bangla text-slate-600"
+              className="flex items-center gap-2 text-[13px] font-bold bangla text-slate-600 dark:text-slate-400"
             >
               {selectedIds.length === members.length && members.length > 0 ? (
                 <CheckSquare size={18} style={{ color: theme.primary }} />
               ) : (
-                <Square size={18} className="text-slate-300" />
+                <Square size={18} className="text-slate-300 dark:text-slate-700" />
               )}
               সবাইকে সিলেক্ট করুন
             </button>
-            <span className="text-[12px] font-bold text-slate-400 bangla">
+            <span className="text-[12px] font-bold text-slate-400 dark:text-slate-600 bangla">
               সিলেক্টেড: <span style={{ color: theme.primary }}>{selectedIds.length}</span>
             </span>
           </div>
 
           <div className="max-h-[300px] overflow-y-auto flex flex-col gap-2 pr-1 custom-scrollbar">
             {fetching ? (
-              <div className="py-10 flex justify-center"><Loader2 className="animate-spin text-slate-200" /></div>
+              <div className="py-10 flex justify-center"><Loader2 className="animate-spin text-slate-200 dark:text-slate-800" /></div>
             ) : members.length > 0 ? (
               members.map(member => (
                 <button
@@ -234,60 +236,60 @@ export default function BulkDeposit() {
                   className={`flex items-center gap-3 p-3 rounded-2xl border transition-all ${
                     selectedIds.includes(member.id) 
                       ? 'bg-primary/5 border-primary/20' 
-                      : 'bg-slate-50 border-slate-100'
+                      : 'bg-slate-50 dark:bg-white/5 border-slate-100 dark:border-white/5'
                   }`}
                   style={selectedIds.includes(member.id) ? { borderColor: `${theme.primary}33`, backgroundColor: `${theme.primary}0D` } : {}}
                 >
                   <div className={`w-5 h-5 rounded-md flex items-center justify-center transition-colors ${
-                    selectedIds.includes(member.id) ? 'text-white' : 'bg-white border border-slate-200'
+                    selectedIds.includes(member.id) ? 'text-white' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/5'
                   }`}
                   style={selectedIds.includes(member.id) ? { backgroundColor: theme.primary } : {}}
                   >
                     {selectedIds.includes(member.id) && <CheckSquare size={14} />}
                   </div>
-                  <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center overflow-hidden shadow-sm shrink-0">
-                    {member.avatar_url ? <img src={member.avatar_url} className="w-full h-full object-cover" /> : <User size={18} className="text-slate-300" />}
+                  <div className="w-9 h-9 rounded-xl bg-white dark:bg-slate-800 flex items-center justify-center overflow-hidden shadow-sm shrink-0">
+                    {member.avatar_url ? <img src={member.avatar_url} className="w-full h-full object-cover" /> : <User size={18} className="text-slate-300 dark:text-slate-600" />}
                   </div>
                   <div className="flex flex-col items-start min-w-0 flex-1">
-                    <span className="text-[13px] font-bold text-slate-700 bangla truncate">{member.full_name}</span>
+                    <span className="text-[13px] font-bold text-slate-700 dark:text-slate-200 bangla truncate">{member.full_name}</span>
                     <div className="flex items-center gap-2">
                       <span className={`text-[9px] px-1.5 py-0.5 rounded-md font-bold bangla tracking-wide border ${
-                        member.role === 'admin' ? 'bg-amber-50 text-amber-600 border-amber-100' : 
-                        'bg-emerald-50 text-emerald-600 border-emerald-100'
+                        member.role === 'admin' ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-500 border-amber-100 dark:border-amber-500/20' : 
+                        'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 border-emerald-100 dark:border-emerald-500/20'
                       }`}>
                         {member.role === 'admin' ? 'অ্যাডমিন' : 'সদস্য'}
                       </span>
-                      <span className="text-[11px] font-bold text-slate-400">৳{member.member_wallets?.[0]?.balance?.toLocaleString() || '০'}</span>
+                      <span className="text-[11px] font-bold text-slate-400 dark:text-slate-600">৳{member.member_wallets?.[0]?.balance?.toLocaleString() || '০'}</span>
                     </div>
                   </div>
                 </button>
               ))
             ) : (
-              <div className="py-10 text-center text-slate-400 bangla text-[13px]">সদস্য পাওয়া যায়নি</div>
+              <div className="py-10 text-center text-slate-400 dark:text-slate-600 bangla text-[13px]">সদস্য পাওয়া যায়নি</div>
             )}
           </div>
         </div>
 
         {/* Step 2: Amount & Type */}
-        <div className="bg-white rounded-[32px] p-8 shadow-sm border border-slate-50 flex flex-col gap-6 text-neutral-800">
+        <div className="dark-card rounded-[32px] p-8 flex flex-col gap-6 text-neutral-800 dark:text-neutral-100">
           <div className="flex flex-col gap-2">
-            <label className="text-[14px] font-bold text-slate-500 bangla ml-1">টাকার পরিমাণ (সবার জন্য)</label>
+            <label className="text-[14px] font-bold text-slate-500 dark:text-slate-400 bangla ml-1">টাকার পরিমাণ (সবার জন্য)</label>
             <div className="relative">
               <input 
                 type="number" 
                 value={formData.amount}
                 onChange={e => setFormData(p => ({ ...p, amount: e.target.value }))}
                 placeholder="0.00"
-                className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-12 py-5 text-[24px] font-bold outline-none focus:ring-4 text-center"
+                className="w-full bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-2xl px-12 py-5 text-[24px] font-bold outline-none focus:ring-4 text-center dark:text-neutral-100 placeholder:text-slate-300 dark:placeholder:text-slate-700"
                 style={{ '--tw-ring-color': `${theme.primary}0D` } as any}
               />
-              <Banknote className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" size={24} />
-              <span className="absolute right-5 top-1/2 -translate-y-1/2 font-bold text-slate-400">৳</span>
+              <Banknote className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-700" size={24} />
+              <span className="absolute right-5 top-1/2 -translate-y-1/2 font-bold text-slate-400 dark:text-slate-600">৳</span>
             </div>
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-[14px] font-bold text-slate-500 bangla ml-1">লেনদেনের ধরন</label>
+            <label className="text-[14px] font-bold text-slate-500 dark:text-slate-400 bangla ml-1">লেনদেনের ধরন</label>
             <div className="grid grid-cols-2 gap-2">
               {[
                 { id: 'savings', label: 'সঞ্চয়' },
@@ -302,7 +304,7 @@ export default function BulkDeposit() {
                   className={`py-4 rounded-2xl font-bold bangla text-[13px] transition-all border ${
                     formData.type === t.id 
                       ? 'text-white shadow-xl' 
-                      : 'bg-slate-50 text-slate-400 border-slate-100'
+                      : 'bg-slate-50 dark:bg-white/5 text-slate-400 dark:text-slate-500 border-slate-100 dark:border-white/5'
                   }`}
                   style={formData.type === t.id ? { backgroundColor: theme.primary, borderColor: theme.primary } : {}}
                 >
@@ -313,12 +315,12 @@ export default function BulkDeposit() {
           </div>
 
           <div className="flex flex-col gap-2">
-             <label className="text-[14px] font-bold text-slate-500 bangla ml-1">নোট / বিস্তারিত</label>
+             <label className="text-[14px] font-bold text-slate-500 dark:text-slate-400 bangla ml-1">নোট / বিস্তারিত</label>
              <input 
                type="text"
                value={formData.note}
                onChange={e => setFormData(p => ({ ...p, note: e.target.value }))}
-               className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-[14px] outline-none"
+               className="w-full bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-2xl px-5 py-4 text-[14px] dark:text-neutral-200 outline-none placeholder:text-slate-300 dark:placeholder:text-slate-700"
              />
           </div>
         </div>
@@ -328,7 +330,7 @@ export default function BulkDeposit() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className={`flex items-center gap-2 p-5 rounded-[22px] border ${
-              message.type === 'success' ? 'text-primary' : 'bg-rose-50 border-rose-100 text-rose-500'
+              message.type === 'success' ? 'text-primary' : 'bg-rose-50 dark:bg-rose-500/10 border-rose-100 dark:border-rose-500/20 text-rose-500'
             }`}
             style={{ 
               backgroundColor: message.type === 'success' ? `${theme.primary}0D` : undefined,
@@ -360,21 +362,21 @@ export default function BulkDeposit() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowConfirm(false)}
-              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+              className="absolute inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm"
             />
             <motion.div 
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-white w-full max-w-[340px] rounded-[36px] p-8 shadow-2xl relative z-10 border border-slate-100 flex flex-col items-center text-center"
+              className="bg-white dark:bg-[#1e293b] w-full max-w-[340px] rounded-[36px] p-8 shadow-2xl relative z-10 border border-slate-100 dark:border-white/5 flex flex-col items-center text-center"
             >
-              <div className="w-20 h-20 rounded-[28px] bg-amber-50 flex items-center justify-center mb-6 border border-amber-100">
+              <div className="w-20 h-20 rounded-[28px] bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center mb-6 border border-amber-100 dark:border-amber-500/20">
                 <AlertTriangle className="text-amber-500" size={40} />
               </div>
               
-              <h3 className="text-[20px] font-bold text-slate-800 bangla mb-3">নিশ্চিত করুন</h3>
-              <p className="text-[14px] text-slate-500 bangla leading-relaxed mb-8 px-2">
-                আপনি <span className="font-bold text-slate-800">{selectedIds.length}</span> জন সদস্যর জন্য <span className="font-bold text-slate-800 underline">৳{formData.amount}</span> করে জমা করতে যাচ্ছেন।
+              <h3 className="text-[20px] font-bold text-slate-800 dark:text-slate-100 bangla mb-3">নিশ্চিত করুন</h3>
+              <p className="text-[14px] text-slate-500 dark:text-slate-400 bangla leading-relaxed mb-8 px-2">
+                আপনি <span className="font-bold text-slate-800 dark:text-slate-100">{selectedIds.length}</span> জন সদস্যর জন্য <span className="font-bold text-slate-800 dark:text-slate-100 underline">৳{formData.amount}</span> করে জমা করতে যাচ্ছেন।
               </p>
 
               <div className="flex flex-col w-full gap-3">
@@ -387,7 +389,7 @@ export default function BulkDeposit() {
                 </button>
                 <button
                   onClick={() => setShowConfirm(false)}
-                  className="w-full bg-slate-50 text-slate-400 py-4 rounded-2xl font-bold bangla text-[15px] active:scale-[0.98] transition-all"
+                  className="w-full bg-slate-50 dark:bg-white/5 text-slate-400 dark:text-slate-500 py-4 rounded-2xl font-bold bangla text-[15px] active:scale-[0.98] transition-all"
                 >
                   বাতিল
                 </button>
@@ -458,12 +460,14 @@ export default function BulkDeposit() {
           width: 4px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-          background: #f1f5f9;
-          border-radius: 10px;
+          background: transparent;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
           background: #cbd5e1;
           border-radius: 10px;
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #334155;
         }
       `}</style>
     </MobileLayout>

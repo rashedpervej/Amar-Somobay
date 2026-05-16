@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '../components/layout/MobileLayout';
 import { useAuthStore } from '../store/useAuthStore';
@@ -15,9 +15,13 @@ import {
   FileText,
   Upload,
   Eye,
-  EyeOff
+  EyeOff,
+  X,
+  Check
 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
+import Cropper from 'react-easy-crop';
+import { getCroppedImg } from '../lib/cropUtils';
 
 export default function EditProfile() {
   const navigate = useNavigate();
@@ -38,6 +42,12 @@ export default function EditProfile() {
     bio: ''
   });
 
+  // Cropper State
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
+
   // Sync with profile when it loads
   useEffect(() => {
     if (profile) {
@@ -49,24 +59,45 @@ export default function EditProfile() {
     }
   }, [profile]);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !user) return;
+  const onCropComplete = useCallback((_: any, croppedAreaPixels: any) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
 
-    if (file.size > 2 * 1024 * 1024) {
-      setMessage({ text: 'ছবির সাইজ ২ মেগাবাইটের কম হতে হবে', type: 'error' });
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage({ text: 'ছবির সাইজ ৫ মেগাবাইটের কম হতে হবে', type: 'error' });
       return;
     }
 
+    const reader = new FileReader();
+    reader.addEventListener('load', () => {
+      setImageSrc(reader.result as string);
+    });
+    reader.readAsDataURL(file);
+  };
+
+  const handleApplyCrop = async () => {
+    if (!imageSrc || !croppedAreaPixels || !user) return;
+
     setUploading(true);
+    setImageSrc(null); // Close cropper
+    
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `${user.id}/${fileName}`; // Folders by user ID for better RLS
+      const croppedBlob = await getCroppedImg(imageSrc, croppedAreaPixels);
+      if (!croppedBlob) throw new Error('Could not crop image');
+
+      const fileName = `${Date.now()}.jpg`;
+      const filePath = `${user.id}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, file);
+        .upload(filePath, croppedBlob, {
+          contentType: 'image/jpeg',
+          upsert: true
+        });
 
       if (uploadError) throw uploadError;
 
@@ -77,10 +108,12 @@ export default function EditProfile() {
       setFormData(prev => ({ ...prev, avatar_url: publicUrl }));
       setMessage({ text: 'ছবি আপলোড সফল হয়েছে', type: 'success' });
     } catch (err: any) {
-      console.error('Upload error:', err);
-      setMessage({ text: 'আপলোড ব্যর্থ হয়েছে। SQL এবং Storage Bucket চেক করুন।', type: 'error' });
+      console.error('Crop/Upload error:', err);
+      setMessage({ text: 'আপলোড ব্যর্থ হয়েছে।', type: 'error' });
     } finally {
       setUploading(false);
+      // Reset input
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -137,13 +170,13 @@ export default function EditProfile() {
               className="absolute bottom-0 right-0 w-8 h-8 rounded-full shadow-lg flex items-center justify-center cursor-pointer border-2 border-white dark:border-[#151c2c] active:scale-90 transition-transform z-20"
               style={{ backgroundColor: theme.primary }}
             >
-              <Upload className="text-white" size={14} />
+              <Camera className="text-white" size={14} />
               <input 
                 type="file" 
                 ref={fileInputRef}
                 className="hidden" 
                 accept="image/*" 
-                onChange={handleFileUpload} 
+                onChange={handleFileSelect} 
               />
             </label>
 
@@ -225,6 +258,85 @@ export default function EditProfile() {
           </button>
         </form>
       </div>
+
+      {/* Image Cropper Modal */}
+      <AnimatePresence>
+        {imageSrc && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-900/90 backdrop-blur-lg" 
+              onClick={() => setImageSrc(null)}
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="w-full max-w-md bg-white dark:bg-slate-800 rounded-[32px] overflow-hidden shadow-2xl relative z-10"
+            >
+              <div className="p-5 border-b border-slate-100 dark:border-white/5 flex items-center justify-between">
+                <h3 className="font-bold bangla text-slate-800 dark:text-slate-100">ছবি ক্রপ করুন</h3>
+                <button onClick={() => setImageSrc(null)} className="p-2 rounded-full bg-slate-50 dark:bg-white/5 text-slate-400">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="relative h-[400px] w-full bg-slate-900">
+                <Cropper
+                  image={imageSrc}
+                  crop={crop}
+                  zoom={zoom}
+                  aspect={1}
+                  onCropChange={setCrop}
+                  onCropComplete={onCropComplete}
+                  onZoomChange={setZoom}
+                  cropShape="round"
+                  showGrid={false}
+                />
+              </div>
+
+              <div className="p-6 flex flex-col gap-6">
+                <div className="flex flex-col gap-2">
+                  <div className="flex justify-between text-[12px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                    <span>জুম</span>
+                    <span>{Math.round(zoom * 100)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    value={zoom}
+                    min={1}
+                    max={3}
+                    step={0.1}
+                    aria-labelledby="Zoom"
+                    onChange={(e) => setZoom(Number(e.target.value))}
+                    className="w-full h-1.5 bg-slate-100 dark:bg-white/5 rounded-full appearance-none cursor-pointer accent-primary"
+                    style={{ '--tw-accent-color': theme.primary } as any}
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setImageSrc(null)}
+                    className="flex-1 h-14 rounded-2xl bg-slate-50 dark:bg-white/5 text-slate-500 font-bold bangla active:scale-95 transition-all"
+                  >
+                    বাতিল
+                  </button>
+                  <button
+                    onClick={handleApplyCrop}
+                    className="flex-1 h-14 rounded-2xl text-white font-bold bangla flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg"
+                    style={{ backgroundColor: theme.primary, boxShadow: `0 8px 20px -4px ${theme.primary}40` }}
+                  >
+                    <Check size={20} strokeWidth={3} />
+                    নিশ্চিত করুন
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </MobileLayout>
   );
 }

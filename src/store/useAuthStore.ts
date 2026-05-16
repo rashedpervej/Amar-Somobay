@@ -95,7 +95,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
   initialize: async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.warn('Session retrieval error:', error.message);
+        if (error.message.includes('Refresh Token Not Found')) {
+          await supabase.auth.signOut();
+        }
+        set({ user: null, profile: null, loading: false, initialized: true });
+        return;
+      }
+
       if (session?.user) {
         const { data: profile } = await supabase
           .from('profiles')
@@ -107,29 +117,46 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       } else {
         set({ user: null, profile: null, loading: false, initialized: true });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Auth initialization error:', error);
-      set({ loading: false, initialized: true });
+      // If we get a "Refresh Token Not Found" error, we should clear the session
+      if (error.message?.includes('Refresh Token Not Found')) {
+        try {
+          await supabase.auth.signOut();
+        } catch (e) {
+          localStorage.removeItem('supabase.auth.token'); // Fallback manual clear if signOut fails
+        }
+      }
+      set({ user: null, profile: null, loading: false, initialized: true });
     }
 
     // Listener for auth changes
     supabase.auth.onAuthStateChange(async (event, session) => {
-      const currentProfile = get().profile;
-      
-      if (session?.user) {
-        if (currentProfile?.id === session.user.id) return;
+      try {
+        const currentProfile = get().profile;
         
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-        
-        set({ user: session.user, profile, loading: false });
-      } else {
-        if (currentProfile !== null || get().user !== null) {
+        if (event === 'SIGNED_OUT') {
           set({ user: null, profile: null, loading: false });
+          return;
         }
+
+        if (session?.user) {
+          if (currentProfile?.id === session.user.id) return;
+          
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          
+          set({ user: session.user, profile, loading: false });
+        } else {
+          if (currentProfile !== null || get().user !== null) {
+            set({ user: null, profile: null, loading: false });
+          }
+        }
+      } catch (error) {
+        console.error('Auth state change handler error:', error);
       }
     });
   },

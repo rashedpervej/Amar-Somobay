@@ -11,7 +11,7 @@ import { QuickAction } from '../components/Dashboard/QuickAction';
 import { 
   Users, 
   Clock, 
-  PiggyBank, 
+  HandCoins, 
   CreditCard, 
   Bell,
   BarChart3,
@@ -205,7 +205,7 @@ export default function Dashboard() {
             label="মোট সঞ্চয়"
             value={loading ? '-' : `৳${totalSavings.toLocaleString()}`}
             textColor="text-emerald-600"
-            icon={<PiggyBank />}
+            icon={<HandCoins />}
             iconBgColor="bg-blue-50"
           />
           <StatCard 
@@ -233,7 +233,7 @@ export default function Dashboard() {
             <QuickAction 
               title="জমা বা সঞ্চয়"
               description="সদস্যের ওয়ালেটে টাকা জমা দিন"
-              icon={<PiggyBank />}
+              icon={<HandCoins />}
               iconBgColor="bg-emerald-50"
               textColor="text-emerald-500"
               onClick={() => navigate('/savings/deposit')}

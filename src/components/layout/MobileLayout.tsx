@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuthStore } from '../../store/useAuthStore';
-import { LayoutDashboard, Users, PiggyBank, Settings, Bell, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, Users, HandCoins, Settings, Bell, TrendingUp } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 
 interface MobileLayoutProps {

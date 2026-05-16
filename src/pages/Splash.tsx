@@ -27,7 +27,7 @@ export default function Splash() {
   }, [initialized, user, profile, navigate]);
 
   return (
-    <div className="mobile-container flex flex-col items-center justify-center p-8 bg-white">
+    <div className="mobile-container flex flex-col items-center justify-center p-8 bg-white dark:bg-slate-950">
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -40,7 +40,7 @@ export default function Splash() {
           <img src={settings.logo_url} alt="Logo" className="w-full h-full object-contain relative z-10" />
         ) : (
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center relative z-10" style={{ backgroundColor: `${theme.primary}0D` }}>
-            <span className="text-4xl">🌱</span>
+            <span className="text-4xl"> </span>
           </div>
         )}
       </motion.div>
@@ -50,7 +50,7 @@ export default function Splash() {
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.3 }}
-          className="text-slate-800 text-4xl font-bold bangla tracking-tight leading-tight"
+          className="text-slate-800 dark:text-white text-4xl font-bold bangla tracking-tight leading-tight"
         >
           {settings?.app_name || 'গ্রামীণ সমিতি'}
         </motion.h1>
