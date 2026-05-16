@@ -286,14 +286,15 @@ export default function EditProfile() {
               <div className="relative h-[400px] w-full bg-slate-900">
                 <Cropper
                   image={imageSrc}
-                  crop={crop}
-                  zoom={zoom}
-                  aspect={1}
-                  onCropChange={setCrop}
-                  onCropComplete={onCropComplete}
-                  onZoomChange={setZoom}
-                  cropShape="round"
-                  showGrid={false}
+                   crop={crop}
+                   zoom={zoom}
+                   aspect={1}
+                   onCropChange={setCrop}
+                   onCropComplete={onCropComplete}
+                   onZoomChange={setZoom}
+                   cropShape="round"
+                   showGrid={false}
+                   objectFit="cover"
                 />
               </div>
 
@@ -306,7 +307,7 @@ export default function EditProfile() {
                   <input
                     type="range"
                     value={zoom}
-                    min={1}
+                    min={0.8}
                     max={3}
                     step={0.1}
                     aria-labelledby="Zoom"

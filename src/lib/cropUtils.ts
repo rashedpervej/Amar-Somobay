@@ -74,37 +74,38 @@ export async function getCroppedImg(
   // draw rotated image
   ctx.drawImage(image, 0, 0);
 
-  const data = ctx.getImageData(
+  // The cropped portion we want is in 'pixelCrop' coordinates on this canvas
+  const finalSize = 512;
+  const targetCanvas = document.createElement('canvas');
+  const targetCtx = targetCanvas.getContext('2d');
+
+  if (!targetCtx) return null;
+
+  targetCanvas.width = finalSize;
+  targetCanvas.height = finalSize;
+
+  // Set high quality smoothing
+  targetCtx.imageSmoothingEnabled = true;
+  targetCtx.imageSmoothingQuality = 'high';
+
+  // Draw ONLY the cropped area from our intermediate canvas to final one
+  // This handles sub-pixel coordinates and scaling much better than getImageData
+  targetCtx.drawImage(
+    canvas,
     pixelCrop.x,
     pixelCrop.y,
     pixelCrop.width,
-    pixelCrop.height
+    pixelCrop.height,
+    0,
+    0,
+    finalSize,
+    finalSize
   );
 
-  // set canvas width to final desired crop size
-  // User requested 512x512
-  const finalSize = 512;
-  canvas.width = finalSize;
-  canvas.height = finalSize;
-
-  // Clear context and draw the cropped image
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  
-  // We use separate canvas to resize nicely
-  const tempCanvas = document.createElement('canvas');
-  tempCanvas.width = pixelCrop.width;
-  tempCanvas.height = pixelCrop.height;
-  const tempCtx = tempCanvas.getContext('2d');
-  if (tempCtx) {
-    tempCtx.putImageData(data, 0, 0);
-    // Draw onto main canvas with scaling
-    ctx.drawImage(tempCanvas, 0, 0, pixelCrop.width, pixelCrop.height, 0, 0, finalSize, finalSize);
-  }
-
-  // As a blob with quality 0.8 for compression
+  // As a blob with quality 0.85 for better balance of size and clarity
   return new Promise((resolve) => {
-    canvas.toBlob((file) => {
+    targetCanvas.toBlob((file) => {
       resolve(file);
-    }, 'image/jpeg', 0.8);
+    }, 'image/jpeg', 0.85);
   });
 }
