@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { MobileLayout } from '../components/layout/MobileLayout';
 import { useAuthStore } from '../store/useAuthStore';
 import { useWalletStore } from '../store/useWalletStore';
+import { useSettingsStore } from '../store/useSettingsStore';
 import { useTheme } from '../components/ThemeProvider';
 import { supabase } from '../lib/supabase';
 import { 
@@ -24,6 +25,7 @@ export default function SingleDeposit() {
   const theme = useTheme();
   const adminProfile = useAuthStore(state => state.profile);
   const addTransaction = useWalletStore(state => state.addTransaction);
+  const settings = useSettingsStore(state => state.settings);
   
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -36,6 +38,12 @@ export default function SingleDeposit() {
     type: 'savings' as 'savings' | 'installment' | 'deposit',
     note: ''
   });
+
+  useEffect(() => {
+    if (settings?.is_wallet_enabled === false) {
+      navigate('/dashboard');
+    }
+  }, [settings, navigate]);
 
   useEffect(() => {
     const memberId = searchParams.get('memberId');
@@ -145,7 +153,12 @@ export default function SingleDeposit() {
 
       <form onSubmit={handleSave} className="flex flex-col gap-6 pb-20">
         {/* Member Selector */}
-        <div className="dark-card rounded-[28px] p-6 flex flex-col gap-4">
+        <motion.div 
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+          className="dark-card rounded-[28px] p-6 flex flex-col gap-4"
+        >
           <label className="text-[14px] font-bold text-slate-600 dark:text-slate-400 bangla ml-1">সদস্য নির্বাচন করুন</label>
           
           <div className="relative">
@@ -224,10 +237,15 @@ export default function SingleDeposit() {
               </button>
             </div>
           )}
-        </div>
+        </motion.div>
 
         {/* Deposit Details */}
-        <div className="dark-card rounded-[28px] p-6 flex flex-col gap-5 text-neutral-800 dark:text-neutral-200">
+        <motion.div 
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.4, ease: "easeOut" }}
+          className="dark-card rounded-[28px] p-6 flex flex-col gap-5 text-neutral-800 dark:text-neutral-200"
+        >
           <div className="flex flex-col gap-1.5">
             <label className="text-[13px] font-bold text-slate-500 dark:text-slate-400 bangla ml-1">টাকার পরিমাণ (Amount)</label>
             <div className="relative">
@@ -284,7 +302,7 @@ export default function SingleDeposit() {
               <MessageSquare className="absolute left-4 top-4 text-slate-300 dark:text-slate-700" size={18} />
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {message.text && (
           <motion.div 

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '../components/layout/MobileLayout';
 import { useAuthStore } from '../store/useAuthStore';
 import { useWalletStore } from '../store/useWalletStore';
+import { useSettingsStore } from '../store/useSettingsStore';
 import { useNotificationStore } from '../store/useNotificationStore';
 import { useSomobayStore } from '../store/useSomobayStore';
 import { useTheme } from '../components/ThemeProvider';
@@ -31,25 +32,18 @@ import { motion } from 'motion/react';
 
 export default function Dashboard() {
   const profile = useAuthStore(state => state.profile);
+  const settings = useSettingsStore(state => state.settings);
   const totalSavings = useWalletStore(state => state.totalSavings);
   const fetchTotalSavings = useWalletStore(state => state.fetchTotalSavings);
   const wallet = useWalletStore(state => state.wallet);
   const fetchWallet = useWalletStore(state => state.fetchWallet);
-  const transactions = useWalletStore(state => state.transactions);
-  const fetchTransactions = useWalletStore(state => state.fetchTransactions);
-  const { memberPlans, fetchMemberPlans } = useSomobayStore();
-  const unreadCount = useNotificationStore(state => state.unreadCount);
-  const fetchNotifications = useNotificationStore(state => state.fetchNotifications);
+  const { transactions, allActivity, fetchTransactions, fetchUnifiedActivity } = useWalletStore();
+  const { memberPlans, fetchMemberPlans, adminStats, fetchAdminStats } = useSomobayStore();
+  const { notifications, unreadCount, fetchNotifications } = useNotificationStore();
   const navigate = useNavigate();
   const theme = useTheme();
-  
-  const [stats, setStats] = useState({
-    totalMembers: 0,
-    pendingMembers: 0,
-    activeLoans: "১,২০,৫০০"
-  });
   const [loading, setLoading] = useState(true);
-
+  
   const isAdmin = profile?.role === 'admin';
 
   useEffect(() => {
@@ -64,9 +58,14 @@ export default function Dashboard() {
       });
 
       if (!isAdmin) {
-        fetchWallet(pId);
-        fetchTransactions(pId);
         fetchMemberPlans(pId);
+        fetchUnifiedActivity({ memberId: pId });
+        if (settings?.is_wallet_enabled !== false) {
+          fetchWallet(pId);
+          fetchTransactions(pId);
+        }
+      } else {
+        fetchAdminStats();
       }
     }
     
@@ -74,58 +73,33 @@ export default function Dashboard() {
       active = false;
       unsubscribe();
     };
-  }, [profile?.id, fetchNotifications, isAdmin, fetchWallet, fetchTransactions, fetchMemberPlans]);
+  }, [profile?.id, fetchNotifications, isAdmin, fetchWallet, fetchTransactions, fetchMemberPlans, fetchAdminStats, settings?.is_wallet_enabled, fetchUnifiedActivity]);
 
   useEffect(() => {
-    let isMounted = true;
-    const fetchStats = async () => {
-      if (!isMounted) return;
-      
-      // If not admin, we skip admin stats fetching
-      if (!isAdmin) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        await Promise.all([
-          (async () => {
-            const { count: total, error: totalError } = await supabase
-              .from('profiles')
-              .select('*', { count: 'exact', head: true })
-              .in('role', ['admin', 'member']);
-            
-            const { count: pending, error: pendingError } = await supabase
-              .from('profiles')
-              .select('*', { count: 'exact', head: true })
-              .eq('role', 'pending');
-            
-            if (isMounted) {
-              setStats(prev => ({
-                ...prev,
-                totalMembers: totalError ? prev.totalMembers : (total || 0),
-                pendingMembers: pendingError ? prev.pendingMembers : (pending || 0)
-              }));
-            }
-          })(),
-          fetchTotalSavings()
-        ]);
-      } catch (err) {
-        console.error('Error fetching stats:', err);
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
-
-    fetchStats();
-    return () => { isMounted = false; };
-  }, [fetchTotalSavings, isAdmin]);
+    if (isAdmin) {
+      setLoading(false);
+    } else if (profile?.id) {
+      setLoading(false);
+    }
+  }, [isAdmin, profile?.id]);
 
   const overdueMemberPlans = memberPlans.filter(mp => 
     mp.status === 'active' && 
     mp.next_due_date && 
-    new Date(mp.next_due_date) <= new Date()
+    new Date(mp.next_due_date) < new Date(new Date().setHours(0,0,0,0))
   );
+
+  const activePlansCount = memberPlans.filter(p => p.status === 'active').length;
+  const overallProgress = memberPlans.length > 0 
+    ? Math.round((memberPlans.reduce((acc, curr) => {
+        const target = curr.plan?.target_amount || 1;
+        return acc + (curr.total_collected / target);
+      }, 0) / memberPlans.length) * 100)
+    : 0;
+  
+  const earliestNextDue = memberPlans
+    .filter(mp => mp.status === 'active' && mp.next_due_date)
+    .sort((a, b) => new Date(a.next_due_date!).getTime() - new Date(b.next_due_date!).getTime())[0]?.next_due_date;
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -133,6 +107,15 @@ export default function Dashboard() {
     if (hour < 18) return "শুভ দুপুর";
     return "শুভ সন্ধ্যা";
   };
+
+  const filteredUnreadCount = settings?.is_wallet_enabled !== false 
+    ? unreadCount 
+    : notifications.filter(n => {
+        if (n.is_read) return false;
+        // If source_module is explicitly wallet, hide it.
+        // Default to showing if not marked or if marked as plan.
+        return n.source_module !== 'wallet';
+      }).length;
 
   const renderHeader = () => (
     <div className="flex justify-between items-center">
@@ -169,12 +152,12 @@ export default function Dashboard() {
         className="bg-white/80 dark:bg-[#1e293b]/60 p-2.5 rounded-2xl shadow-sm border border-slate-200 dark:border-white/5 text-slate-500 dark:text-slate-400 active:scale-95 transition-all relative backdrop-blur-md"
       >
         <Bell size={22} strokeWidth={2.2} />
-        {unreadCount > 0 && (
+        {filteredUnreadCount > 0 && (
           <div 
             className="absolute -top-1 -right-1 w-5 h-5 rounded-full border-2 border-white dark:border-[#0b0f1a] flex items-center justify-center text-[10px] font-extrabold text-white shadow-lg animate-pulse"
             style={{ backgroundColor: theme.primary }}
           >
-            {unreadCount > 9 ? '9+' : unreadCount}
+            {filteredUnreadCount > 9 ? '9+' : filteredUnreadCount}
           </div>
         )}
       </button>
@@ -187,89 +170,68 @@ export default function Dashboard() {
         {renderHeader()}
 
         <div className="grid grid-cols-2 gap-[12px] mt-4">
-          <StatCard 
-            label="মোট সদস্য"
-            value={loading ? '-' : stats.totalMembers}
-            textColor="text-primary"
-            icon={<Users />}
-            iconBgColor="bg-primary/10"
-          />
-          <StatCard 
-            label="অপেক্ষমান"
-            value={loading ? '-' : stats.pendingMembers}
-            textColor="text-orange-500"
-            icon={<Clock />}
-            iconBgColor="bg-orange-50"
-          />
-          <StatCard 
-            label="মোট সঞ্চয়"
-            value={loading ? '-' : `৳${totalSavings.toLocaleString()}`}
-            textColor="text-emerald-600"
-            icon={<HandCoins />}
-            iconBgColor="bg-blue-50"
-          />
-          <StatCard 
-            label="সক্রিয় ঋণ"
-            value={loading ? '-' : stats.activeLoans}
-            textColor="text-rose-500"
-            icon={<CreditCard />}
-            iconBgColor="bg-purple-50"
-          />
+          {[
+            { id: 'total-members', label: "মোট সদস্য", value: adminStats.totalMembers, color: "text-primary", icon: <Users />, bg: "bg-primary/10" },
+            { id: 'active-plans', label: "সক্রিয় প্ল্যান", value: adminStats.activePlans, color: "text-blue-500", icon: <TrendingUp />, bg: "bg-blue-50" },
+            { id: 'total-collections', label: "মোট কালেকশন", value: `৳${adminStats.totalCollections.toLocaleString()}`, color: "text-emerald-600", icon: <HandCoins />, bg: "bg-emerald-50" },
+            { id: 'overdue-members', label: "বকেয়া সদস্য", value: adminStats.overdueMembers, color: "text-rose-500", icon: <Clock />, bg: "bg-rose-50" },
+            { id: 'pending-dues', label: "পেন্ডিং কিস্তি", value: `৳${adminStats.pendingDues.toLocaleString()}`, color: "text-orange-500", icon: <AlertCircle />, bg: "bg-orange-50" },
+            settings?.is_wallet_enabled !== false && { id: 'total-savings', label: "মোট সঞ্চয়", value: `৳${totalSavings.toLocaleString()}`, color: "text-slate-600", icon: <HandCoins />, bg: "bg-slate-100" },
+          ].filter(Boolean).map((stat: any, i) => (
+            <motion.div
+              key={stat.id}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05, duration: 0.4, ease: "easeOut" }}
+              className={stat.id === 'total-collections' ? "col-span-2" : ""}
+            >
+              <StatCard 
+                label={stat.label}
+                value={loading ? '-' : stat.value}
+                textColor={stat.color}
+                icon={stat.icon}
+                iconBgColor={stat.bg}
+              />
+            </motion.div>
+          ))}
         </div>
 
         <div className="flex flex-col gap-[16px] mt-6">
           <h2 className="text-[18px] font-bold text-slate-800 dark:text-slate-200 bangla px-1">দ্রুত কার্যক্রম</h2>
           
           <div className="flex flex-col gap-[12px]">
-            <QuickAction 
-              title="সদস্য ব্যবস্থাপনা"
-              description="সদস্য দেখুন ও পরিচালনা করুন"
-              icon={<Users />}
-              iconBgColor="bg-primary/10"
-              textColor="text-primary"
-              onClick={() => navigate('/members')}
-            />
-
-            <QuickAction 
-              title="জমা বা সঞ্চয়"
-              description="সদস্যের ওয়ালেটে টাকা জমা দিন"
-              icon={<HandCoins />}
-              iconBgColor="bg-emerald-50"
-              textColor="text-emerald-500"
-              onClick={() => navigate('/savings/deposit')}
-            />
-            
-            <QuickAction 
-              title="সবার জমা (Bulk)"
-              description="একসাথে সবার জন্য সমপরিমাণ জমা"
-              icon={<Users />}
-              iconBgColor="bg-blue-50"
-              textColor="text-blue-500"
-              onClick={() => navigate('/savings/bulk')}
-            />
-            
-            <QuickAction 
-              title="আর্থিক বিবরণ"
-              description="সঞ্চয় ও ঋণ পর্যালোচনা"
-              icon={<BarChart3 />}
-              iconBgColor="bg-primary/10"
-              textColor="text-primary"
-              onClick={() => navigate('/savings')}
-            />
-
-            <QuickAction 
-              title="সমবায় ব্যবস্থাপনা"
-              description="ফিক্সড ডিপোজিট ও সাপ্তাহিক সঞ্চয় ব্যবস্থাপনা"
-              icon={<TrendingUp size={22} />}
-              iconBgColor="bg-purple-50"
-              textColor="text-purple-600"
-              onClick={() => navigate('/somobay/manage')}
-            />
+            {[
+              { id: 'members', title: "সদস্য ব্যবস্থাপনা", desc: "সদস্য দেখুন ও পরিচালনা করুন", icon: <Users />, color: "text-primary", bg: "bg-primary/10", path: "/members" },
+              settings?.is_wallet_enabled !== false && { id: 'deposit', title: "জমা বা সঞ্চয়", desc: "সদস্যের ওয়ালেটে টাকা জমা দিন", icon: <HandCoins />, color: "text-emerald-500", bg: "bg-emerald-50", path: "/savings/deposit" },
+              settings?.is_wallet_enabled !== false && { id: 'bulk', title: "সবার জমা (Bulk)", desc: "একসাথে সবার জন্য সমপরিমাণ জমা", icon: <Users />, color: "text-blue-500", bg: "bg-blue-50", path: "/savings/bulk" },
+              { id: 'savings', title: "আর্থিক বিবরণ (লেনদেন)", desc: settings?.is_wallet_enabled !== false ? "সঞ্চয় ও কিস্তি আদায়ের সারসংক্ষেপ" : "কিস্তি আদায়ের বিস্তারিত ইতিহাস", icon: <BarChart3 />, color: "text-primary", bg: "bg-primary/10", path: "/savings" },
+              { id: 'somobay', title: "সমবায় ব্যবস্থাপনা", desc: "ফিক্সড ডিপোজিট ও সাপ্তাহিক সঞ্চয় ব্যবস্থাপনা", icon: <TrendingUp size={22} />, color: "text-purple-600", bg: "bg-purple-50", path: "/somobay/manage" }
+            ].filter(Boolean).map((action: any, i) => (
+              <motion.div
+                key={action.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: (i + 4) * 0.05, duration: 0.4, ease: "easeOut" }}
+              >
+                <QuickAction 
+                  title={action.title}
+                  description={action.desc}
+                  icon={action.icon}
+                  iconBgColor={action.bg}
+                  textColor={action.color}
+                  onClick={() => navigate(action.path)}
+                />
+              </motion.div>
+            ))}
           </div>
         </div>
       </MobileLayout>
     );
   }
+
+  const displayActivity = settings?.is_wallet_enabled !== false 
+    ? allActivity 
+    : allActivity.filter(tx => tx.source_module !== 'wallet');
 
   // Member Dashboard UI
   return (
@@ -297,7 +259,7 @@ export default function Dashboard() {
         </motion.div>
       )}
 
-      {/* Member Main Card */}
+      {/* Member Main Card - Somobay Summary */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -307,6 +269,7 @@ export default function Dashboard() {
         style={{ 
           background: `linear-gradient(225deg, ${theme.primary}, ${theme.secondary}, ${theme.primary})`,
         }}
+        onClick={() => navigate('/somobay/my')}
       >
         {/* Decorative elements */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/25 rounded-full -mr-32 -mt-32 blur-3xl transition-all duration-1000 group-hover:bg-white/30" />
@@ -315,58 +278,96 @@ export default function Dashboard() {
         <div className="p-8 text-white relative z-10">
           <div className="flex justify-between items-start mb-10">
             <div className="flex flex-col gap-1">
-              <span className="text-[13px] bangla font-bold text-white/90 uppercase tracking-widest opacity-80">আমার ব্যালেন্স</span>
+              <span className="text-[13px] bangla font-bold text-white/90 uppercase tracking-widest opacity-80">সমবায় সারসংক্ষেপ</span>
               <div className="h-0.5 w-8 bg-white/50 rounded-full" />
             </div>
             <div className="bg-white/20 backdrop-blur-xl px-4 py-1.5 rounded-2xl flex items-center gap-2 border border-white/25 shadow-sm">
               <Activity size={14} className="animate-pulse" />
-              <span className="text-[11px] bangla font-black tracking-tighter uppercase">সক্রিয়</span>
+              <span className="text-[11px] bangla font-black tracking-tighter uppercase">{activePlansCount}টি সক্রিয়</span>
             </div>
           </div>
           
-          <div className="flex items-baseline gap-2 mb-10">
-            <span className="text-[48px] font-black bangla leading-none drop-shadow-md">৳{wallet?.balance?.toLocaleString() || '০'}</span>
+          <div className="flex flex-col gap-2 mb-10">
+            <div className="flex justify-between items-end">
+              <span className="text-[38px] font-black bangla leading-none drop-shadow-md">{overallProgress}%</span>
+              <span className="text-[13px] bangla font-bold opacity-80 uppercase tracking-widest">গড় অগ্রগতি</span>
+            </div>
+            <div className="w-full h-2.5 bg-black/20 rounded-full overflow-hidden border border-white/10 p-[1px]">
+              <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: `${overallProgress}%` }}
+                transition={{ duration: 1, ease: "easeOut" }}
+                className="h-full bg-white rounded-full shadow-[0_0_15px_rgba(255,255,255,0.5)]" 
+              />
+            </div>
           </div>
           
           <div className="grid grid-cols-2 gap-6 pt-6 border-t border-white/20">
             <div className="flex flex-col gap-1">
-              <span className="text-[12px] bangla text-white/80 font-bold uppercase tracking-tight opacity-75">সঞ্চয় জমা</span>
-              <span className="text-[20px] font-black bangla tracking-tight leading-none">৳{wallet?.total_deposit?.toLocaleString() || '০'}</span>
+              <span className="text-[12px] bangla text-white/80 font-bold uppercase tracking-tight opacity-75">পরবর্তী কিস্তি</span>
+              <span className="text-[16px] font-black bangla tracking-tight leading-none">
+                {earliestNextDue ? new Date(earliestNextDue).toLocaleDateString('bn-BD', { day: 'numeric', month: 'short' }) : 'নেই'}
+              </span>
             </div>
             <div className="flex flex-col gap-1 border-l border-white/10 pl-6">
               <span className="text-[12px] bangla text-white/80 font-bold uppercase tracking-tight opacity-75">বকেয়া কিস্তি</span>
-              <span className="text-[20px] font-black bangla tracking-tight leading-none">৳০</span>
+              <span className="text-[20px] font-black bangla tracking-tight leading-none">
+                {overdueMemberPlans.length > 0 ? overdueMemberPlans.length : '০'}টি
+              </span>
             </div>
           </div>
         </div>
       </motion.div>
 
+      {/* Wallet Card - Small version if enabled */}
+      {settings?.is_wallet_enabled !== false && (
+        <motion.div 
+           initial={{ opacity: 0, y: 15 }}
+           animate={{ opacity: 1, y: 0 }}
+           onClick={() => navigate('/savings')}
+           className="mt-4 dark-card p-5 rounded-[28px] border border-slate-100 dark:border-white/5 flex items-center justify-between shadow-sm active:scale-[0.98] transition-all"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+              <HandCoins size={24} />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[12px] text-slate-400 dark:text-slate-500 bangla font-bold uppercase tracking-tight">ওয়ালেট ব্যালেন্স</span>
+              <span className="text-[18px] font-extrabold text-slate-800 dark:text-slate-100 bangla">৳{wallet?.balance?.toLocaleString() || '০'}</span>
+            </div>
+          </div>
+          <ChevronRight size={20} className="text-slate-300" />
+        </motion.div>
+      )}
+
       {/* Quick Actions Grid for Members */}
-      <div className="mt-8 flex flex-col gap-4">
-        <h2 className="text-[18px] font-bold text-slate-800 dark:text-slate-200 bangla px-1">দ্রুত কার্যক্রম</h2>
-        <div className="grid grid-cols-4 gap-3">
-          {[
-            { id: 'history', title: 'সঞ্চয় ইতিহাস', icon: <History />, color: 'bg-emerald-50 text-emerald-500 dark:bg-emerald-500/10 dark:text-emerald-400', path: '/savings' },
-            { id: 'somobay', title: 'সমবায় প্ল্যান', icon: <TrendingUp />, color: 'bg-orange-50 text-orange-500 dark:bg-orange-500/10 dark:text-orange-400', path: '/somobay/my' },
-            { id: 'profile', title: 'প্রোফাইল', icon: <User />, color: 'bg-indigo-50 text-indigo-500 dark:bg-indigo-500/10 dark:text-indigo-400', path: '/settings/profile' },
-            { id: 'notifications', title: 'বিজ্ঞপ্তি', icon: <Bell />, color: 'bg-purple-50 text-purple-500 dark:bg-purple-500/10 dark:text-purple-400', path: '/notifications' },
-          ].map((action, i) => (
-            <motion.button
-              key={action.id + i}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: i * 0.05 }}
-              onClick={() => navigate(action.path)}
-              className="flex flex-col items-center gap-2 group"
-            >
-              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm border border-slate-100 dark:border-white/5 transition-all group-active:scale-90 ${action.color}`}>
-                {React.cloneElement(action.icon as React.ReactElement, { size: 24, strokeWidth: 2 })}
-              </div>
-              <span className="text-[12px] font-bold text-slate-600 dark:text-slate-400/80 bangla truncate w-full text-center">{action.title}</span>
-            </motion.button>
-          ))}
+      {settings?.is_member_quick_actions_enabled !== false && (
+        <div className="mt-8 flex flex-col gap-4">
+          <h2 className="text-[18px] font-bold text-slate-800 dark:text-slate-200 bangla px-1">দ্রুত কার্যক্রম</h2>
+          <div className="grid grid-cols-4 gap-3">
+            {[
+              settings?.is_wallet_enabled !== false && { id: 'history', title: 'সঞ্চয় ইতিহাস', icon: <History />, color: 'bg-emerald-50 text-emerald-500 dark:bg-emerald-500/10 dark:text-emerald-400', path: '/savings' },
+              { id: 'somobay', title: 'সমবায় প্ল্যান', icon: <TrendingUp />, color: 'bg-orange-50 text-orange-500 dark:bg-orange-500/10 dark:text-orange-400', path: '/somobay/my' },
+              { id: 'profile', title: 'প্রোফাইল', icon: <User />, color: 'bg-indigo-50 text-indigo-500 dark:bg-indigo-500/10 dark:text-indigo-400', path: '/settings/profile' },
+              { id: 'notifications', title: 'বিজ্ঞপ্তি', icon: <Bell />, color: 'bg-purple-50 text-purple-500 dark:bg-purple-500/10 dark:text-purple-400', path: '/notifications' },
+            ].filter(Boolean).map((action: any, i) => (
+                <motion.button
+                  key={action.id + i}
+                  initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  transition={{ delay: (i + 2) * 0.05, duration: 0.4, ease: "easeOut" }}
+                  onClick={() => navigate(action.path)}
+                  className="flex flex-col items-center gap-2 group"
+                >
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm border border-slate-100 dark:border-white/5 transition-all group-active:scale-90 ${action.color}`}>
+                  {React.cloneElement(action.icon as React.ReactElement, { size: 24, strokeWidth: 2 })}
+                </div>
+                <span className="text-[12px] font-bold text-slate-600 dark:text-slate-400/80 bangla truncate w-full text-center">{action.title}</span>
+              </motion.button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Recent Transactions for Members */}
       <div className="mt-8 flex flex-col gap-4">
@@ -376,22 +377,23 @@ export default function Dashboard() {
         </div>
         
         <div className="flex flex-col gap-3">
-          {transactions.slice(0, 3).length > 0 ? (
-            transactions.slice(0, 3).map((tx, i) => (
+          {displayActivity.slice(0, 3).length > 0 ? (
+            displayActivity.slice(0, 3).map((tx, i) => (
               <motion.div 
                 key={tx.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.1 }}
+                initial={{ opacity: 0, x: -10, y: 10 }}
+                animate={{ opacity: 1, x: 0, y: 0 }}
+                transition={{ delay: (i + 6) * 0.06, duration: 0.4, ease: "easeOut" }}
                 className="dark-card p-4 rounded-[24px] flex items-center justify-between shadow-sm active:scale-[0.98] cursor-pointer"
+                onClick={() => navigate('/savings')}
               >
                 <div className="flex items-center gap-3">
-                  <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${tx.transaction_type === 'savings' ? 'bg-emerald-50 text-emerald-500 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-blue-50 text-blue-500 dark:bg-blue-500/10 dark:text-blue-400'}`}>
-                    {tx.transaction_type === 'savings' ? <ArrowDownLeft size={20} strokeWidth={2.5} /> : <ArrowUpRight size={20} strokeWidth={2.5} />}
+                  <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${tx.transaction_type.includes('payment') || tx.transaction_type === 'savings' || tx.transaction_type === 'deposit' ? 'bg-emerald-50 text-emerald-500 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-rose-50 text-rose-500 dark:bg-rose-500/10 dark:text-rose-400'}`}>
+                    {tx.transaction_type.includes('payment') || tx.transaction_type === 'savings' || tx.transaction_type === 'deposit' ? <ArrowDownLeft size={20} strokeWidth={2.5} /> : <ArrowUpRight size={20} strokeWidth={2.5} />}
                   </div>
                   <div className="flex flex-col">
                     <span className="text-[16px] font-bold text-slate-800 dark:text-slate-100 bangla leading-none mb-1">
-                      {tx.transaction_type === 'savings' ? 'সঞ্চয় জমা' : tx.transaction_type === 'installment' ? 'কিস্তি জমা' : 'লেনদেন'}
+                      {tx.transaction_type === 'plan_payment' ? 'কিস্তি জমা' : tx.transaction_type === 'savings' ? 'সঞ্চয় জমা' : tx.transaction_type === 'deposit' ? 'আমানত জমা' : tx.transaction_type === 'loan' ? 'ঋণ গ্রহণ' : tx.transaction_type === 'fine' ? 'জরিমানা' : 'লেনদেন'}
                     </span>
                     <span className="text-[12px] text-slate-400 dark:text-slate-500 bangla font-medium">
                       {new Date(tx.created_at).toLocaleDateString('bn-BD', { day: 'numeric', month: 'long' })}
@@ -399,15 +401,15 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className="flex flex-col items-end">
-                  <span className="text-[17px] font-extrabold text-emerald-500 dark:text-emerald-400 bangla">
-                    +৳{tx.amount.toLocaleString()}
+                  <span className={`text-[17px] font-extrabold bangla ${tx.transaction_type.includes('payment') || tx.transaction_type === 'savings' || tx.transaction_type === 'deposit' ? 'text-emerald-500' : 'text-rose-500'}`}>
+                    {tx.transaction_type.includes('payment') || tx.transaction_type === 'savings' || tx.transaction_type === 'deposit' ? '+' : '-'}৳{tx.amount.toLocaleString()}
                   </span>
                 </div>
               </motion.div>
             ))
           ) : (
-             <div className="p-8 text-center text-slate-400 bangla bg-slate-50 dark:bg-slate-950 rounded-[20px]">
-               এখনও কোনো লেনদেন নেই
+             <div className="p-8 text-center text-slate-400 bangla bg-slate-50 dark:bg-slate-950 rounded-[20px] border-2 border-dashed border-slate-100 dark:border-white/5">
+               এখনও কোনো লেনদেন রেকর্ড নেই
              </div>
           )}
         </div>

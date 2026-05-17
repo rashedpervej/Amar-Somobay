@@ -12,7 +12,8 @@ import {
   CheckCircle2,
   AlertCircle,
   Image as ImageIcon,
-  Palette
+  Palette,
+  Wallet
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -26,15 +27,35 @@ export default function AppSettings() {
 
   // Form State
   const [formData, setFormData] = useState({
-    app_name: settings?.app_name || '',
-    app_tagline: settings?.app_tagline || '',
-    welcome_text: settings?.welcome_text || '',
-    footer_text: settings?.footer_text || '',
-    organization_name: settings?.organization_name || '',
-    logo_url: settings?.logo_url || '',
-    primary_color: settings?.primary_color || '#10b981',
-    secondary_color: settings?.secondary_color || '#059669'
+    app_name: '',
+    app_tagline: '',
+    welcome_text: '',
+    footer_text: '',
+    organization_name: '',
+    logo_url: '',
+    primary_color: '#10b981',
+    secondary_color: '#059669',
+    is_wallet_enabled: true,
+    is_member_quick_actions_enabled: true
   });
+
+  // Sync with store when it loads or changes
+  useEffect(() => {
+    if (settings) {
+      setFormData({
+        app_name: settings.app_name || '',
+        app_tagline: settings.app_tagline || '',
+        welcome_text: settings.welcome_text || '',
+        footer_text: settings.footer_text || '',
+        organization_name: settings.organization_name || '',
+        logo_url: settings.logo_url || '',
+        primary_color: settings.primary_color || '#10b981',
+        secondary_color: settings.secondary_color || '#059669',
+        is_wallet_enabled: settings.is_wallet_enabled !== false,
+        is_member_quick_actions_enabled: settings.is_member_quick_actions_enabled !== false
+      });
+    }
+  }, [settings]);
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -128,6 +149,46 @@ export default function AppSettings() {
             )}
           </div>
           <span className="text-xs font-bold text-slate-400 dark:text-slate-500 bangla uppercase tracking-widest">অ্যাপ লোগো</span>
+        </div>
+
+        {/* System Capabilities Toggle */}
+        <div className="dark-card rounded-[22px] p-6">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-blue-50 dark:bg-blue-500/10">
+              <Wallet size={20} className="text-blue-500" />
+            </div>
+            <h3 className="text-[17px] font-bold text-slate-800 dark:text-slate-100 bangla">সিস্টেম ফিচারস</h3>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[14px] font-bold text-slate-700 dark:text-slate-200 bangla">ওয়ালেট সিস্টেম</span>
+                <span className="text-[11px] text-slate-400 dark:text-slate-500 bangla">সঞ্চয় ও ডিপোজিট ফিচার চালু/বন্ধ করুন</span>
+              </div>
+              <button 
+                onClick={() => setFormData(p => ({ ...p, is_wallet_enabled: !p.is_wallet_enabled }))}
+                className={`w-12 h-6 rounded-full relative transition-colors duration-200 ${formData.is_wallet_enabled ? '' : 'bg-slate-300 dark:bg-slate-700'}`}
+                style={{ backgroundColor: formData.is_wallet_enabled ? theme.primary : undefined }}
+              >
+                <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all duration-200 ${formData.is_wallet_enabled ? 'left-7' : 'left-1'}`} />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[14px] font-bold text-slate-700 dark:text-slate-200 bangla">দ্রুত কার্যক্রম (সদস্য)</span>
+                <span className="text-[11px] text-slate-400 dark:text-slate-500 bangla">সদস্য ড্যাশবোর্ডে কুইক একশন মেনু দেখান</span>
+              </div>
+              <button 
+                onClick={() => setFormData(p => ({ ...p, is_member_quick_actions_enabled: !p.is_member_quick_actions_enabled }))}
+                className={`w-12 h-6 rounded-full relative transition-colors duration-200 ${formData.is_member_quick_actions_enabled ? '' : 'bg-slate-300 dark:bg-slate-700'}`}
+                style={{ backgroundColor: formData.is_member_quick_actions_enabled ? theme.primary : undefined }}
+              >
+                <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all duration-200 ${formData.is_member_quick_actions_enabled ? 'left-7' : 'left-1'}`} />
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Dynamic Theme Colors */}

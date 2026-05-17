@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '../components/layout/MobileLayout';
 import { useAuthStore } from '../store/useAuthStore';
 import { useNotificationStore } from '../store/useNotificationStore';
+import { useSettingsStore } from '../store/useSettingsStore';
 import { useTheme } from '../components/ThemeProvider';
 import { 
   ChevronLeft, 
@@ -20,7 +21,12 @@ export default function Notifications() {
   const theme = useTheme();
   const profile = useAuthStore(state => state.profile);
   const notifications = useNotificationStore(state => state.notifications);
+  const settings = useSettingsStore(state => state.settings);
   const loading = useNotificationStore(state => state.loading);
+
+  const filteredNotifications = settings?.is_wallet_enabled !== false 
+    ? notifications 
+    : notifications.filter(n => n.source_module !== 'wallet');
   const fetchNotifications = useNotificationStore(state => state.fetchNotifications);
   const markAsRead = useNotificationStore(state => state.markAsRead);
   const markAllAsRead = useNotificationStore(state => state.markAllAsRead);
@@ -62,7 +68,7 @@ export default function Notifications() {
           <h1 className="text-[22px] font-bold bangla tracking-tight">নোটিফিকেশন</h1>
         </div>
 
-        {notifications.some(n => !n.is_read) && (
+        {filteredNotifications.some(n => !n.is_read) && (
           <button 
             onClick={handleMarkAll}
             className="text-[12px] font-extrabold bangla px-4 py-2 rounded-xl transition-all active:scale-95 shadow-lg shadow-primary/5"
@@ -75,13 +81,13 @@ export default function Notifications() {
 
       <div className="flex flex-col gap-[14px] pb-24">
         <AnimatePresence mode="popLayout">
-          {notifications.length > 0 ? (
-            notifications.map((notification, index) => (
+          {filteredNotifications.length > 0 ? (
+            filteredNotifications.map((notification, index) => (
               <motion.div
                 key={notification.id}
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
+                transition={{ delay: index * 0.04, duration: 0.4, ease: "easeOut" }}
                 onClick={() => !notification.is_read && markAsRead(notification.id)}
                 className={`dark-card rounded-[26px] p-5 shadow-sm transition-all relative border border-transparent ${
                   notification.is_read ? 'opacity-50' : 'shadow-md active:scale-[0.99] cursor-pointer'

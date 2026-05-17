@@ -5,6 +5,7 @@ import { Search, User, ChevronRight, Filter, ChevronDown, SortAsc, SortDesc, Cal
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTheme } from '../components/ThemeProvider';
+import { useSettingsStore } from '../store/useSettingsStore';
 
 interface Profile {
   id: string;
@@ -20,6 +21,7 @@ type SortOption = 'name' | 'date' | 'balance';
 
 export default function MemberList() {
   const theme = useTheme();
+  const settings = useSettingsStore(state => state.settings);
   const [members, setMembers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -170,17 +172,19 @@ export default function MemberList() {
                     >
                       <Calendar size={14} /> তারিখ
                     </button>
-                    <button
-                      onClick={() => setSortBy('balance')}
-                      className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[12px] font-bold bangla border transition-all ${
-                        sortBy === 'balance' 
-                          ? 'bg-primary/10 text-primary border-primary/20' 
-                          : 'bg-slate-50 dark:bg-white/5 text-slate-400 dark:text-slate-500 border-slate-100 dark:border-white/5'
-                      }`}
-                      style={sortBy === 'balance' ? { color: theme.primary, backgroundColor: `${theme.primary}1A`, borderColor: `${theme.primary}33` } : {}}
-                    >
-                      <Wallet size={14} /> ব্যালেন্স
-                    </button>
+                    {settings?.is_wallet_enabled !== false && (
+                      <button
+                        onClick={() => setSortBy('balance')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[12px] font-bold bangla border transition-all ${
+                          sortBy === 'balance' 
+                            ? 'bg-primary/10 text-primary border-primary/20' 
+                            : 'bg-slate-50 dark:bg-white/5 text-slate-400 dark:text-slate-500 border-slate-100 dark:border-white/5'
+                        }`}
+                        style={sortBy === 'balance' ? { color: theme.primary, backgroundColor: `${theme.primary}1A`, borderColor: `${theme.primary}33` } : {}}
+                      >
+                        <Wallet size={14} /> ব্যালেন্স
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -208,40 +212,48 @@ export default function MemberList() {
               ))}
             </div>
           ) : filteredAndSortedMembers.length > 0 ? (
-            filteredAndSortedMembers.map((member) => (
-              <Link 
+            filteredAndSortedMembers.map((member, i) => (
+              <motion.div
                 key={member.id}
-                to={`/members/${member.id}`}
-                className="dark-card p-4 rounded-[26px] shadow-sm flex items-center gap-4 active:scale-[0.98] transition-all border border-transparent hover:shadow-md"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.04, duration: 0.4, ease: "easeOut" }}
               >
-                <div className="w-14 h-14 bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5 rounded-2xl flex items-center justify-center text-slate-300 dark:text-slate-700 shrink-0 overflow-hidden shadow-inner">
-                  {member.avatar_url ? (
-                    <img src={member.avatar_url} alt={member.full_name} className="w-full h-full object-cover" />
-                  ) : (
-                    <User size={28} />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-start">
-                    <h3 className="text-[16px] font-bold text-slate-800 dark:text-slate-100 bangla truncate leading-tight">{member.full_name}</h3>
-                    <div className="flex flex-col items-end shrink-0">
-                      <span className="text-[14px] font-black text-emerald-600 dark:text-emerald-500">৳{member.member_wallets?.[0]?.balance?.toLocaleString() || '০'}</span>
-                      <span className="text-[8px] text-slate-400 dark:text-slate-600 font-bold uppercase tracking-widest mt-0.5">ব্যালেন্স</span>
+                <Link 
+                  to={`/members/${member.id}`}
+                  className="dark-card premium-shine p-4 rounded-[26px] shadow-sm flex items-center gap-4 active:scale-[0.98] transition-all border border-transparent hover:shadow-md"
+                >
+                  <div className="w-14 h-14 bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5 rounded-2xl flex items-center justify-center text-slate-300 dark:text-slate-700 shrink-0 overflow-hidden shadow-inner">
+                    {member.avatar_url ? (
+                      <img src={member.avatar_url} alt={member.full_name} className="w-full h-full object-cover" />
+                    ) : (
+                      <User size={28} />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-start">
+                      <h3 className="text-[16px] font-bold text-slate-800 dark:text-slate-100 bangla truncate leading-tight">{member.full_name}</h3>
+                      {settings?.is_wallet_enabled !== false && (
+                        <div className="flex flex-col items-end shrink-0">
+                          <span className="text-[14px] font-black text-emerald-600 dark:text-emerald-500">৳{member.member_wallets?.[0]?.balance?.toLocaleString() || '০'}</span>
+                          <span className="text-[8px] text-slate-400 dark:text-slate-600 font-bold uppercase tracking-widest mt-0.5">ব্যালেন্স</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 mt-1.5">
+                      <span className={`text-[10px] px-2.5 py-0.5 rounded-[10px] font-bold bangla tracking-wide border ${
+                        member.role === 'admin' ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-500 border-amber-100 dark:border-amber-500/20' : 
+                        member.role === 'member' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 border-emerald-100 dark:border-emerald-500/20' : 
+                        'bg-slate-50 dark:bg-white/5 text-slate-500 dark:text-slate-500 border-slate-100 dark:border-white/5'
+                      }`}>
+                        {member.role === 'admin' ? 'অ্যাডমিন' : member.role === 'member' ? 'সদস্য' : 'অপেক্ষমান'}
+                      </span>
+                      <span className="text-[12px] text-slate-400 dark:text-slate-500 truncate opacity-80 font-medium">{member.email}</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 mt-1.5">
-                    <span className={`text-[10px] px-2.5 py-0.5 rounded-[10px] font-bold bangla tracking-wide border ${
-                      member.role === 'admin' ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-500 border-amber-100 dark:border-amber-500/20' : 
-                      member.role === 'member' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 border-emerald-100 dark:border-emerald-500/20' : 
-                      'bg-slate-50 dark:bg-white/5 text-slate-500 dark:text-slate-500 border-slate-100 dark:border-white/5'
-                    }`}>
-                      {member.role === 'admin' ? 'অ্যাডমিন' : member.role === 'member' ? 'সদস্য' : 'অপেক্ষমান'}
-                    </span>
-                    <span className="text-[12px] text-slate-400 dark:text-slate-500 truncate opacity-80 font-medium">{member.email}</span>
-                  </div>
-                </div>
-                <ChevronRight size={18} className="text-slate-300 dark:text-slate-700 shrink-0" />
-              </Link>
+                  <ChevronRight size={18} className="text-slate-300 dark:text-slate-700 shrink-0" />
+                </Link>
+              </motion.div>
             ))
           ) : (
             <div className="py-20 flex flex-col items-center justify-center gap-4">

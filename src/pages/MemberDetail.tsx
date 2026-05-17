@@ -4,6 +4,7 @@ import { MobileLayout } from '../components/layout/MobileLayout';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/useAuthStore';
 import { useWalletStore } from '../store/useWalletStore';
+import { useSettingsStore } from '../store/useSettingsStore';
 import { useTheme } from '../components/ThemeProvider';
 import { 
   User, 
@@ -36,6 +37,7 @@ export default function MemberDetail() {
   const navigate = useNavigate();
   const theme = useTheme();
   const currentUser = useAuthStore(state => state.profile);
+  const settings = useSettingsStore(state => state.settings);
   const wallet = useWalletStore(state => state.wallet);
   const transactions = useWalletStore(state => state.transactions);
   const fetchWallet = useWalletStore(state => state.fetchWallet);
@@ -127,7 +129,12 @@ export default function MemberDetail() {
         </div>
 
         {/* Profile Card */}
-        <div className="dark-card rounded-[32px] p-8 flex flex-col items-center gap-4 relative overflow-hidden mb-6">
+        <motion.div 
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+          className="dark-card rounded-[32px] p-8 flex flex-col items-center gap-4 relative overflow-hidden mb-6"
+        >
           <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full opacity-[0.1]" style={{ backgroundColor: theme.primary }} />
           
           <div 
@@ -149,11 +156,16 @@ export default function MemberDetail() {
               </span>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Wallet Summary */}
-        {member.role !== 'pending' && (
-          <div className="flex flex-col gap-[14px] mb-6">
+        {member.role !== 'pending' && settings?.is_wallet_enabled !== false && (
+          <motion.div 
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1, duration: 0.4, ease: "easeOut" }}
+            className="flex flex-col gap-[14px] mb-6"
+          >
             <div className="flex justify-between items-end px-2">
               <h3 className="text-[14px] font-bold text-slate-400 dark:text-slate-600 bangla uppercase tracking-widest">ওয়ালেট ও সঞ্চয়</h3>
               {isAdmin && (
@@ -235,11 +247,16 @@ export default function MemberDetail() {
                 )}
               </div>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* Info List */}
-        <div className="flex flex-col gap-[14px] mb-6">
+        <motion.div 
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.4, ease: "easeOut" }}
+          className="flex flex-col gap-[14px] mb-6"
+        >
           <h3 className="text-[14px] font-bold text-slate-400 dark:text-slate-600 bangla px-2 uppercase tracking-widest">তথ্যসমূহ</h3>
           
           <div className="dark-card rounded-[28px] overflow-hidden divide-y divide-slate-100 dark:divide-white/5">
@@ -281,11 +298,16 @@ export default function MemberDetail() {
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Admin Controls */}
         {isAdmin && (
-          <div className="flex flex-col gap-[14px] pb-10">
+          <motion.div 
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.4, ease: "easeOut" }}
+            className="flex flex-col gap-[14px] pb-10"
+          >
             <h3 className="text-[14px] font-bold text-slate-400 dark:text-slate-600 bangla px-2 uppercase tracking-widest">অ্যাডমিন কন্ট্রোল</h3>
             
             <div className="dark-card rounded-[28px] p-6 flex flex-col gap-6">
@@ -336,7 +358,7 @@ export default function MemberDetail() {
                 </motion.div>
               )}
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* Confirmation Modal */}

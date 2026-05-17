@@ -47,8 +47,17 @@ interface SomobayState {
   memberPlans: MemberPlan[];
   loading: boolean;
   
+  adminStats: {
+    totalMembers: number;
+    activePlans: number;
+    totalCollections: number;
+    overdueMembers: number;
+    pendingDues: number;
+  };
+  
   fetchPlans: () => Promise<void>;
   fetchMemberPlans: (userId?: string) => Promise<void>;
+  fetchAdminStats: () => Promise<void>;
   createPlan: (plan: Omit<SomobayPlan, 'id' | 'is_active'>) => Promise<void>;
   updatePlan: (id: string, plan: Partial<SomobayPlan>) => Promise<void>;
   enrollMember: (memberId: string, planId: string, durationMonths: number, frequency: string) => Promise<void>;
@@ -66,6 +75,13 @@ export const useSomobayStore = create<SomobayState>((set, get) => ({
   plans: [],
   memberPlans: [],
   loading: false,
+  adminStats: {
+    totalMembers: 0,
+    activePlans: 0,
+    totalCollections: 0,
+    overdueMembers: 0,
+    pendingDues: 0
+  },
 
   fetchPlans: async () => {
     set({ loading: true });
@@ -101,6 +117,47 @@ export const useSomobayStore = create<SomobayState>((set, get) => ({
       set({ memberPlans: (data as any) || [] });
     }
     set({ loading: false });
+  },
+
+  fetchAdminStats: async () => {
+    try {
+      set({ loading: true });
+      const today = new Date().toISOString().split('T')[0];
+
+      // 1. Total Members
+      const { count: membersCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'member');
+
+      // 2. Active Plans & Overdue Info
+      const { data: plansData } = await supabase.from('member_plans').select('id, next_due_date, status, plan:somobay_plans(installment_amount)');
+      
+      const activePlans = plansData?.filter(p => p.status === 'active') || [];
+      const overduePlans = activePlans.filter(p => p.next_due_date && p.next_due_date < today);
+      
+      // Calculate pending dues (rough estimate)
+      const pendingDues = overduePlans.reduce((acc, curr) => acc + ((curr.plan as any)?.installment_amount || 0), 0);
+
+      // 3. Total Collections from All Time
+      const { data: paymentsData } = await supabase.from('plan_payments').select('amount');
+      const totalCollections = paymentsData?.reduce((acc, curr) => acc + curr.amount, 0) || 0;
+
+      // 4. Overdue Members (Unique members)
+      const { data: overdueMembersData } = await supabase.from('member_plans').select('member_id').eq('status', 'active').lt('next_due_date', today);
+      const overdueMembersCount = new Set(overdueMembersData?.map(m => m.member_id)).size;
+
+      set({
+        adminStats: {
+          totalMembers: membersCount || 0,
+          activePlans: activePlans.length,
+          totalCollections,
+          overdueMembers: overdueMembersCount,
+          pendingDues
+        }
+      });
+    } catch (err) {
+      console.error('Error fetching admin stats:', err);
+    } finally {
+      set({ loading: false });
+    }
   },
 
   createPlan: async (plan) => {
@@ -177,8 +234,21 @@ export const useSomobayStore = create<SomobayState>((set, get) => ({
     // We no longer manually update member_plans here.
     // The database trigger trg_sync_member_plan_summary handles it.
     
+    // Record Notification
+    const { data: mpData } = await supabase.from('member_plans').select('member_id, plan:somobay_plans(name)').eq('id', data.memberPlanId).single();
+    if (mpData) {
+      await supabase.from('notifications').insert([{
+        user_id: mpData.member_id,
+        title: 'কিস্তি জমা সফল',
+        message: `আপনার "${(mpData as any).plan?.name}" প্ল্যানে ${data.amount.toLocaleString()} টাকা কিস্তি জমা দেওয়া হয়েছে। তারিখ: ${new Date().toLocaleDateString('bn-BD')}`,
+        type: 'success',
+        source_module: 'plan'
+      }]);
+    }
+    
     // Refresh to get updated data from the DB
     get().fetchMemberPlans();
+    get().fetchAdminStats();
   },
 
   sendReminders: async () => {
@@ -212,7 +282,8 @@ export const useSomobayStore = create<SomobayState>((set, get) => ({
         user_id: plan.member_id,
         title: 'কিস্তি জমা দেওয়ার সময় হয়েছে',
         message: `আপনার "${plan.plan?.name}" প্ল্যান এর কিস্তি জমা দেওয়ার তারিখ পার হয়েছে। অনুগ্রহ করে দ্রুত জমা দিন।`,
-        type: 'warning'
+        type: 'warning',
+        source_module: 'plan'
       }]);
       sent++;
     }

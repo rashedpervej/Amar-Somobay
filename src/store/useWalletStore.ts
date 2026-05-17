@@ -25,12 +25,13 @@ export interface Transaction {
 interface WalletState {
   wallet: Wallet | null;
   transactions: Transaction[];
-  allActivity: Transaction[];
+  allActivity: any[];
   totalSavings: number;
   loading: boolean;
   fetchWallet: (userId: string) => Promise<void>;
   fetchTransactions: (userId: string) => Promise<void>;
   fetchAllTransactions: () => Promise<void>;
+  fetchUnifiedActivity: (filters?: { memberId?: string, planId?: string, startDate?: string, endDate?: string }) => Promise<void>;
   fetchTotalSavings: () => Promise<void>;
   addTransaction: (data: {
     member_id: string;
@@ -97,22 +98,93 @@ export const useWalletStore = create<WalletState>((set, get) => ({
 
   fetchAllTransactions: async () => {
     try {
+      set({ loading: true });
       // Fetch everything for master admin log
-      const [txRes, actionRes] = await Promise.all([
+      const [txRes, actionRes, planPaymentsRes] = await Promise.all([
         supabase.from('wallet_transactions').select('*, profiles:member_id(full_name)').order('created_at', { ascending: false }),
-        supabase.from('member_actions').select('*, profiles:member_id(full_name)').order('created_at', { ascending: false })
+        supabase.from('member_actions').select('*, profiles:member_id(full_name)').order('created_at', { ascending: false }),
+        supabase.from('plan_payments').select('*, member_plans(member_id, plan_id, plan:somobay_plans(name), profiles:member_id(full_name))').order('payment_date', { ascending: false })
       ]);
       
+      const planPaymentsMerged = (planPaymentsRes.data || []).map(p => ({
+        id: p.id,
+        member_id: (p.member_plans as any)?.member_id,
+        amount: p.amount,
+        transaction_type: 'plan_payment',
+        note: p.note || `কিস্তি জমা: ${(p.member_plans as any)?.plan?.name || 'প্ল্যান'}`,
+        created_at: p.payment_date,
+        profiles: (p.member_plans as any)?.profiles,
+        plan_name: (p.member_plans as any)?.plan?.name,
+        penalty_paid: p.penalty_paid
+      }));
+
       const merged = [
-        ...(txRes.data || []),
-        ...(actionRes.data?.map(a => ({ ...a, transaction_type: a.action_type })) || [])
+        ...(txRes.data?.map(tx => ({ ...tx, source_module: 'wallet' })) || []),
+        ...(actionRes.data?.map(a => ({ ...a, transaction_type: a.action_type, source_module: 'wallet' })) || []),
+        ...planPaymentsMerged.map(p => ({ ...p, source_module: 'plan' }))
       ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-      if (JSON.stringify(merged) !== JSON.stringify(get().transactions)) {
-        set({ transactions: merged });
-      }
+      set({ allActivity: merged });
+      // Keep transactions for backward compat if needed
+      set({ transactions: merged.slice(0, 50) });
     } catch (err) {
       console.error('All transactions fetch error:', err);
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  fetchUnifiedActivity: async (filters) => {
+    try {
+      set({ loading: true });
+      let txQuery = supabase.from('wallet_transactions').select('*, profiles:member_id(full_name)');
+      let actionQuery = supabase.from('member_actions').select('*, profiles:member_id(full_name)');
+      let planQuery = supabase.from('plan_payments').select(`
+        *, 
+        member_plans!inner(member_id, plan_id, plan:somobay_plans(name), profiles:member_id(full_name))
+      `);
+
+      if (filters?.memberId) {
+        txQuery = txQuery.eq('member_id', filters.memberId);
+        actionQuery = actionQuery.eq('member_id', filters.memberId);
+        planQuery = planQuery.eq('member_plans.member_id', filters.memberId);
+      }
+
+      if (filters?.planId) {
+        planQuery = planQuery.eq('member_plans.plan_id', filters.planId);
+      }
+
+      const [txRes, actionRes, planRes] = await Promise.all([
+        txQuery.order('created_at', { ascending: false }),
+        actionQuery.order('created_at', { ascending: false }),
+        planQuery.order('payment_date', { ascending: false })
+      ]);
+
+      const planPayments = (planRes.data || []).map(p => ({
+        id: p.id,
+        member_id: (p.member_plans as any)?.member_id,
+        amount: p.amount,
+        transaction_type: 'plan_payment',
+        note: p.note || `কিস্তি জমা: ${(p.member_plans as any)?.plan?.name || 'প্ল্যান'}`,
+        created_at: p.payment_date,
+        profiles: (p.member_plans as any)?.profiles,
+        plan_name: (p.member_plans as any)?.plan?.name,
+        plan_id: (p.member_plans as any)?.plan_id,
+        penalty_paid: p.penalty_paid,
+        source_module: 'plan'
+      }));
+
+      const merged = [
+        ...(txRes.data?.map(tx => ({ ...tx, source_module: 'wallet' })) || []),
+        ...(actionRes.data?.map(a => ({ ...a, transaction_type: a.action_type, source_module: 'wallet' })) || []),
+        ...planPayments
+      ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      set({ allActivity: merged });
+    } catch (err) {
+      console.error('Unified activity fetch error:', err);
+    } finally {
+      set({ loading: false });
     }
   },
 
@@ -183,7 +255,8 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       user_id: data.member_id,
       title: `নতুন ${typeLabel} রেকর্ডকৃত`,
       message: `${data.amount.toLocaleString()} টাকা পরিমাণ ${typeLabel} আপনার অ্যাকাউন্টে রেকর্ড করা হয়েছে।`,
-      type: isSpecial ? 'info' : 'success'
+      type: isSpecial ? 'info' : 'success',
+      source_module: 'wallet'
     }]);
     
     // Refresh relevant data
@@ -219,11 +292,11 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       if (error) throw error;
 
       // Ensure bulk installments are recorded in plan_payments
-      if (data.type === 'installment') {
+      if (data.type === 'installment' || data.type === 'savings') {
         for (const mid of data.member_ids) {
           const { data: mps } = await supabase
             .from('member_plans')
-            .select('id')
+            .select('id, plan:somobay_plans(name)')
             .eq('member_id', mid)
             .eq('status', 'active')
             .limit(1);
@@ -234,24 +307,34 @@ export const useWalletStore = create<WalletState>((set, get) => ({
               amount: data.amount,
               penalty_paid: 0,
               admin_id: data.admin_id,
-              note: data.note || 'Bulk Wallet Installment',
+              note: data.note || 'Bulk Deposit',
               status: 'approved'
+            }]);
+
+            // Notify Member about the plan payment
+            await supabase.from('notifications').insert([{
+              user_id: mid,
+              title: 'কিস্তি জমা হয়েছে (বাল্ক)',
+              message: `আপনার "${(mps[0] as any).plan?.name}" প্ল্যানে ${data.amount.toLocaleString()} টাকা কিস্তি জমা দেওয়া হয়েছে। তারিখ: ${new Date().toLocaleDateString('bn-BD')}`,
+              type: 'success',
+              source_module: 'plan'
             }]);
           }
         }
       }
     }
 
-    // Create notifications for all members in bulk
-    const typeLabel = data.type === 'loan' ? 'ঋণ' : data.type === 'fine' ? 'জরিমানা' : 'জমা';
-    const notifications = data.member_ids.map(mid => ({
-      user_id: mid,
-      title: `বাল্ক ${typeLabel} সফল হয়েছে`,
-      message: `${data.amount.toLocaleString()} টাকা পরিমাণ ${typeLabel} আপনার অ্যাকাউন্টে রেকর্ড করা হয়েছে।`,
-      type: isSpecial ? 'info' : 'success'
-    }));
-
-    await supabase.from('notifications').insert(notifications);
+    // Create notifications for all members for the wallet deposit if applicable
+    if (data.type === 'savings' || data.type === 'deposit') {
+      const notifications = data.member_ids.map(mid => ({
+        user_id: mid,
+        title: `বাল্ক ${data.type === 'savings' ? 'সঞ্চয়' : 'আমানত'} সফল হয়েছে`,
+        message: `${data.amount.toLocaleString()} টাকা আপনার ওয়ালেটে জমা দেওয়া হয়েছে।`,
+        type: 'success',
+        source_module: 'wallet'
+      }));
+      await supabase.from('notifications').insert(notifications);
+    }
 
     get().fetchTotalSavings();
     get().fetchAllTransactions(); // Refresh master log

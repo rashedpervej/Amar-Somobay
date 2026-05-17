@@ -44,6 +44,48 @@
   @apply bg-white dark:bg-[var(--color-dark-card)] border border-transparent dark:border-[var(--color-dark-border)] shadow-sm dark:shadow-none transition-all duration-300;
 }
 
+.premium-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.premium-shine::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -100%;
+  width: 40%;
+  height: 200%;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(255, 255, 255, 0.04),
+    rgba(255, 255, 255, 0.08),
+    rgba(255, 255, 255, 0.04),
+    transparent
+  );
+  transform: rotate(25deg);
+  animation: shine-sweep 8s infinite ease-in-out;
+  pointer-events: none;
+}
+
+.dark .premium-shine::after {
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(255, 255, 255, 0.02),
+    rgba(255, 255, 255, 0.05),
+    rgba(255, 255, 255, 0.02),
+    transparent
+  );
+}
+
+@keyframes shine-sweep {
+  0% { left: -100%; }
+  15% { left: 150%; }
+  100% { left: 150%; }
+}
+
 .bangla {
   font-family: "Tiro Bangla", serif;
 }

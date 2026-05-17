@@ -9,6 +9,7 @@ export interface Notification {
   type: 'info' | 'success' | 'warning' | 'error';
   is_read: boolean;
   created_at: string;
+  source_module?: 'plan' | 'wallet';
 }
 
 interface NotificationState {
@@ -24,6 +25,7 @@ interface NotificationState {
     title: string;
     message: string;
     type?: 'info' | 'success' | 'warning' | 'error';
+    source_module?: 'plan' | 'wallet';
   }) => Promise<void>;
 }
 
@@ -161,7 +163,8 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
           user_id: data.user_id,
           title: data.title,
           message: data.message,
-          type: data.type || 'info'
+          type: data.type || 'info',
+          source_module: data.source_module || 'plan'
         }]);
 
       if (error) throw error;

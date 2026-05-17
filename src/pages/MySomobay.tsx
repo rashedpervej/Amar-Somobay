@@ -44,16 +44,17 @@ export default function MySomobay() {
         </div>
       ) : memberPlans.length > 0 ? (
         <div className="flex flex-col gap-6">
-          {memberPlans.map((mp: any) => {
+          {memberPlans.map((mp: any, i) => {
             const progress = (mp.total_collected / mp.plan?.target_amount) * 100;
             const isOverdue = new Date(mp.next_due_date) < new Date();
             
             return (
               <motion.div 
                 key={mp.id}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white dark:bg-slate-900 rounded-[32px] p-6 shadow-sm border border-slate-50 dark:border-slate-800"
+                transition={{ delay: i * 0.08, duration: 0.5, ease: "easeOut" }}
+                className="bg-white dark:bg-slate-900 premium-shine rounded-[32px] p-6 shadow-sm border border-slate-50 dark:border-slate-800"
               >
                 <div className="flex justify-between items-start mb-6">
                   <div className="flex flex-col">
@@ -74,13 +75,15 @@ export default function MySomobay() {
                 <div className="mb-8">
                   <div className="flex justify-between items-end mb-3 px-1">
                     <div className="flex flex-col">
-                      <span className="text-[12px] text-slate-400 bangla mb-0.5">সংগৃহীত পরিমাণ</span>
-                      <span className="text-[24px] font-black text-slate-800 dark:text-slate-100 bangla leading-none">
-                        ৳{mp.total_collected.toLocaleString()}
+                      <span className="text-[12px] text-slate-400 bangla mb-0.5">কিস্তির পরিমাণ</span>
+                      <span className="text-[18px] font-bold text-slate-800 dark:text-slate-100 bangla leading-none">
+                        ৳{mp.plan?.installment_amount.toLocaleString()} ৳
+                        <span className="text-[12px] text-slate-400 font-medium lowercase ml-1">/{mp.plan?.frequency === 'weekly' ? 'সপ্তাহ' : 'মাস'}</span>
                       </span>
                     </div>
-                    <div className="text-right">
-                      <span className="text-[14px] font-bold text-primary bangla">{Math.round(progress)}%</span>
+                    <div className="text-right flex flex-col items-end">
+                       <span className="text-[12px] text-slate-400 bangla mb-0.5">সংগৃহীত</span>
+                       <span className="text-[18px] font-black text-emerald-500 bangla leading-none">৳{mp.total_collected.toLocaleString()}</span>
                     </div>
                   </div>
                   <div className="w-full h-3 bg-slate-50 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-100/50 dark:border-slate-800/50">
@@ -90,10 +93,11 @@ export default function MySomobay() {
                       className="h-full bg-primary rounded-full shadow-[0_0_12px_rgba(var(--primary-rgb),0.3)]"
                     />
                   </div>
-                  <div className="flex justify-between items-center mt-3 text-[11px] text-slate-400 bangla px-1">
-                    <span>শুরু: {new Date(mp.start_date).toLocaleDateString('bn-BD')}</span>
-                    <span>লক্ষ্য: ৳{mp.plan?.target_amount.toLocaleString()}</span>
-                  </div>
+              <div className="flex justify-between items-center mt-3 text-[11px] text-slate-400 bangla px-1">
+                <span>শুরু: {new Date(mp.start_date).toLocaleDateString('bn-BD')}</span>
+                <span className="font-bold text-primary">{Math.round(progress)}% অগ্রগতি</span>
+                <span>লক্ষ্য: ৳{mp.plan?.target_amount.toLocaleString()}</span>
+              </div>
                 </div>
 
                 {/* Due Info */}

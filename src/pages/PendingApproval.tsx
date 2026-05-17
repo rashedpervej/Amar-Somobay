@@ -63,7 +63,12 @@ export default function PendingApproval() {
         </div>
 
         {/* User Avatar */}
-        <div className="relative mb-6">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9, y: 15 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          className="relative mb-6"
+        >
           <div className="w-24 h-24 rounded-full border-4 border-white shadow-xl overflow-hidden bg-slate-50 flex items-center justify-center">
             {profile?.avatar_url ? (
               <img src={profile.avatar_url} alt="avatar" className="w-full h-full object-cover" />
@@ -74,19 +79,29 @@ export default function PendingApproval() {
           <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-white shadow-md flex items-center justify-center border border-slate-50 text-amber-500">
             <Clock size={16} />
           </div>
-        </div>
+        </motion.div>
 
-        <div className="text-center mb-8 px-4">
+        <motion.div 
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.5, ease: "easeOut" }}
+          className="text-center mb-8 px-4"
+        >
           <h1 className="text-[22px] font-bold text-slate-800 bangla leading-tight mb-2">
             নমস্কার, {profile?.full_name || 'সদস্য'}!
           </h1>
           <p className="text-[15px] text-slate-500 bangla leading-relaxed bg-amber-50 px-4 py-2 rounded-full inline-block border border-amber-100/50">
             আপনার একাউন্ট অনুমোদনের অপেক্ষায় আছে
           </p>
-        </div>
+        </motion.div>
 
         {/* Completion Progress Card */}
-        <div className="w-full bg-white rounded-[28px] p-6 shadow-sm border border-slate-50 mb-6">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.6, ease: "easeOut" }}
+          className="w-full bg-white rounded-[28px] p-6 shadow-sm border border-slate-50 mb-6"
+        >
           <div className="flex justify-between items-center mb-4 px-1">
             <h3 className="text-[14px] font-bold text-slate-700 bangla">প্রোফাইল সম্পন্ন করুন</h3>
             <span className="text-[14px] font-bold bangla" style={{ color: theme.primary }}>{percentage}%</span>
@@ -102,8 +117,14 @@ export default function PendingApproval() {
           </div>
 
           <div className="space-y-3">
-            {completionItems.map((item) => (
-              <div key={item.id} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100/50 group">
+            {completionItems.map((item, i) => (
+              <motion.div 
+                key={item.id}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 + (i * 0.1), duration: 0.4 }}
+                className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100/50 group"
+              >
                 <div className="flex items-center gap-3">
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${item.done ? 'bg-primary/10 text-primary' : 'bg-white text-slate-400'}`}
                        style={item.done ? { color: theme.primary, backgroundColor: `${theme.primary}1A` } : {}}>
@@ -118,7 +139,7 @@ export default function PendingApproval() {
                 ) : (
                   <Circle size={18} className="text-slate-200" />
                 )}
-              </div>
+              </motion.div>
             ))}
           </div>
 
@@ -134,7 +155,7 @@ export default function PendingApproval() {
             প্রোফাইল এডিট করুন
             <ChevronRight size={18} />
           </button>
-        </div>
+        </motion.div>
 
         {/* Action Buttons */}
         <div className="grid grid-cols-2 gap-3 w-full px-1">

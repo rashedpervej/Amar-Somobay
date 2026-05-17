@@ -99,8 +99,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       
       if (error) {
         console.warn('Session retrieval error:', error.message);
-        if (error.message.includes('Refresh Token Not Found')) {
-          await supabase.auth.signOut();
+        if (error.message.toLowerCase().includes('refresh token not found')) {
+          // Forcefully clear session if refresh token is gone
+          try {
+            await supabase.auth.signOut();
+          } catch (e) {
+            // Fallback: clear local storage manually if signer fails
+            Object.keys(localStorage).forEach(key => {
+              if (key.includes('supabase.auth.token') || key.startsWith('sb-')) {
+                localStorage.removeItem(key);
+              }
+            });
+          }
         }
         set({ user: null, profile: null, loading: false, initialized: true });
         return;
@@ -119,12 +129,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
     } catch (error: any) {
       console.error('Auth initialization error:', error);
-      // If we get a "Refresh Token Not Found" error, we should clear the session
-      if (error.message?.includes('Refresh Token Not Found')) {
+      const isRefreshError = error.message?.toLowerCase().includes('refresh token not found');
+      
+      if (isRefreshError) {
         try {
           await supabase.auth.signOut();
         } catch (e) {
-          localStorage.removeItem('supabase.auth.token'); // Fallback manual clear if signOut fails
+          Object.keys(localStorage).forEach(key => {
+            if (key.includes('supabase.auth.token') || key.startsWith('sb-')) {
+              localStorage.removeItem(key);
+            }
+          });
         }
       }
       set({ user: null, profile: null, loading: false, initialized: true });
@@ -155,8 +170,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             set({ user: null, profile: null, loading: false });
           }
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Auth state change handler error:', error);
+        if (error.message?.toLowerCase().includes('refresh token not found')) {
+          set({ user: null, profile: null, loading: false });
+        }
       }
     });
   },

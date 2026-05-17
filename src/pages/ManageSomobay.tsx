@@ -286,10 +286,13 @@ export default function ManageSomobay() {
           dragElastic={0.1}
           className="flex gap-5 pb-6 cursor-grab active:cursor-grabbing"
         >
-          {plans.map((plan) => (
+          {plans.map((plan, i) => (
             <motion.div 
               key={plan.id}
-              className="min-w-[280px] w-[280px] bg-white dark:bg-slate-900 rounded-[32px] p-6 shadow-sm border border-slate-50 dark:border-slate-800 relative overflow-hidden group"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.1, duration: 0.5, ease: "easeOut" }}
+              className="min-w-[280px] w-[280px] bg-white dark:bg-slate-900 premium-shine rounded-[32px] p-6 shadow-sm border border-slate-50 dark:border-slate-800 relative overflow-hidden group"
             >
               <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -mr-8 -mt-8" />
               <div className="flex justify-between items-start mb-2 relative z-20">
@@ -351,9 +354,12 @@ export default function ManageSomobay() {
         </div>
 
         <div className="flex flex-col gap-3">
-          {memberPlans.map((mp: any) => (
+          {memberPlans.map((mp: any, i) => (
             <motion.div 
               key={mp.id}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: (i + 2) * 0.05, duration: 0.4, ease: "easeOut" }}
               onClick={() => {
                 setSelectedMemberPlan(mp);
                 setPaymentData({ ...paymentData, amount: mp.plan?.installment_amount || 0 });

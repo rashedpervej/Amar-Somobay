@@ -11,6 +11,8 @@ export interface AppSettings {
   secondary_color: string;
   footer_text: string;
   organization_name: string;
+  is_wallet_enabled: boolean;
+  is_member_quick_actions_enabled: boolean;
 }
 
 interface SettingsState {
@@ -48,7 +50,9 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
             primary_color: '#10b981',
             secondary_color: '#059669',
             footer_text: 'পরিচালনায়: গ্রামীণ ক্ষুদ্র সঞ্চয় সমিতি',
-            organization_name: 'গ্রামীণ সমিতি লিমিটেড'
+            organization_name: 'গ্রামীণ সমিতি লিমিটেড',
+            is_wallet_enabled: true,
+            is_member_quick_actions_enabled: true
           },
           loading: false,
           initialized: true
@@ -75,6 +79,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         organization_name: updates.organization_name ?? current.organization_name,
         primary_color: updates.primary_color ?? current.primary_color,
         secondary_color: updates.secondary_color ?? current.secondary_color,
+        is_wallet_enabled: updates.is_wallet_enabled ?? (current.is_wallet_enabled ?? true),
+        is_member_quick_actions_enabled: updates.is_member_quick_actions_enabled ?? (current.is_member_quick_actions_enabled ?? true),
         updated_at: new Date().toISOString()
       };
 
@@ -83,12 +89,19 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         .upsert(payload, { onConflict: 'id' });
 
       if (error) {
-        // If it's a column missing error, try a fallback without the color columns
-        if (error.message?.includes('column') && (error.message?.includes('primary_color') || error.message?.includes('secondary_color'))) {
+        // If it's a column missing error, try a fallback without the extra columns
+        if (error.message?.includes('column')) {
           console.warn('Falling back to basic settings update due to schema mismatch');
           const fallbackPayload = { ...payload };
-          delete fallbackPayload.primary_color;
-          delete fallbackPayload.secondary_color;
+          
+          // List of columns that might be missing in older schemas
+          const potentialMissingColumns = ['primary_color', 'secondary_color', 'is_wallet_enabled'];
+          
+          potentialMissingColumns.forEach(col => {
+            if (error.message?.includes(col)) {
+              delete (fallbackPayload as any)[col];
+            }
+          });
           
           const { error: retryError } = await supabase
             .from('app_settings')

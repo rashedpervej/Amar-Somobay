@@ -23,6 +23,7 @@ import SavingsHistory from './pages/SavingsHistory';
 import ManageSomobay from './pages/ManageSomobay';
 import MySomobay from './pages/MySomobay';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import ScrollToTop from './components/ScrollToTop';
 
 export default function App() {
   const initialize = useAuthStore(state => state.initialize);
@@ -35,6 +36,7 @@ export default function App() {
   return (
     <ThemeProvider>
       <Router>
+        <ScrollToTop />
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Splash />} />

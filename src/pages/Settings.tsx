@@ -4,6 +4,7 @@ import { useSettingsStore } from '../store/useSettingsStore';
 import { useTheme } from '../components/ThemeProvider';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, User, Shield, Info, ChevronRight, Bell, Settings as SettingsIcon, Sun, Moon } from 'lucide-react';
+import { motion } from 'motion/react';
 
 export default function Settings() {
   const { profile, signOut } = useAuthStore();
@@ -75,8 +76,11 @@ export default function Settings() {
           <h2 className="text-[12px] font-bold text-slate-400 dark:text-slate-500 bangla px-3 lg:px-4 uppercase tracking-[0.15em]">সাধারণ</h2>
           <div className="dark-card rounded-[28px] overflow-hidden">
             {menuItems.map((item: any, index) => (
-              <button 
+              <motion.button 
                 key={index}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.05, duration: 0.3 }}
                 onClick={() => item.path && item.path !== '#' && navigate(item.path)}
                 className={`w-full flex items-center gap-4 p-4 text-left active:bg-slate-50 dark:active:bg-white/5 transition-all ${index !== menuItems.length - 1 ? 'border-b border-slate-100 dark:border-white/5' : ''}`}
               >
@@ -90,7 +94,7 @@ export default function Settings() {
                 <div className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-50 dark:bg-white/5 text-slate-300 dark:text-slate-600">
                   <ChevronRight size={18} />
                 </div>
-              </button>
+              </motion.button>
             ))}
           </div>
         </div>
@@ -100,8 +104,11 @@ export default function Settings() {
             <h2 className="text-[12px] font-bold text-slate-400 dark:text-slate-500 bangla px-3 lg:px-4 uppercase tracking-[0.15em]">অ্যাডমিন সেটিংস</h2>
             <div className="dark-card rounded-[28px] overflow-hidden">
               {adminItems.map((item: any, index) => (
-                <button 
+                <motion.button 
                   key={index}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: (index + menuItems.length) * 0.05, duration: 0.3 }}
                   onClick={() => navigate(item.path)}
                   className={`w-full flex items-center gap-4 p-4 text-left active:bg-slate-50 dark:active:bg-white/5 transition-all ${index !== adminItems.length - 1 ? 'border-b border-slate-100 dark:border-white/5' : ''}`}
                 >
@@ -115,7 +122,7 @@ export default function Settings() {
                   <div className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-50 dark:bg-white/5 text-slate-300 dark:text-slate-600">
                     <ChevronRight size={18} />
                   </div>
-                </button>
+                </motion.button>
               ))}
             </div>
           </div>

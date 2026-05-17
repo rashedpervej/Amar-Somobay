@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '../components/layout/MobileLayout';
 import { useAuthStore } from '../store/useAuthStore';
 import { useWalletStore } from '../store/useWalletStore';
+import { useSettingsStore } from '../store/useSettingsStore';
 import { useTheme } from '../components/ThemeProvider';
 import { supabase } from '../lib/supabase';
 import { 
@@ -24,6 +25,7 @@ import { motion, AnimatePresence } from 'motion/react';
 export default function BulkDeposit() {
   const navigate = useNavigate();
   const theme = useTheme();
+  const settings = useSettingsStore(state => state.settings);
   const adminProfile = useAuthStore(state => state.profile);
   const bulkDeposit = useWalletStore(state => state.bulkDeposit);
   
@@ -49,6 +51,12 @@ export default function BulkDeposit() {
     type: 'savings' as 'savings' | 'installment' | 'deposit',
     note: 'মাসিক সঞ্চয়'
   });
+
+  useEffect(() => {
+    if (settings?.is_wallet_enabled === false) {
+      navigate('/dashboard');
+    }
+  }, [settings, navigate]);
 
   useEffect(() => {
     fetchMembers();
@@ -229,9 +237,12 @@ export default function BulkDeposit() {
             {fetching ? (
               <div className="py-10 flex justify-center"><Loader2 className="animate-spin text-slate-200 dark:text-slate-800" /></div>
             ) : members.length > 0 ? (
-              members.map(member => (
-                <button
+              members.map((member, i) => (
+                <motion.button
                   key={member.id}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.03 }}
                   onClick={() => toggleMember(member.id)}
                   className={`flex items-center gap-3 p-3 rounded-2xl border transition-all ${
                     selectedIds.includes(member.id) 
@@ -262,7 +273,7 @@ export default function BulkDeposit() {
                       <span className="text-[11px] font-bold text-slate-400 dark:text-slate-600">৳{member.member_wallets?.[0]?.balance?.toLocaleString() || '০'}</span>
                     </div>
                   </div>
-                </button>
+                </motion.button>
               ))
             ) : (
               <div className="py-10 text-center text-slate-400 dark:text-slate-600 bangla text-[13px]">সদস্য পাওয়া যায়নি</div>
