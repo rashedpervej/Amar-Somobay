@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { MobileLayout } from '../components/layout/MobileLayout';
 import { supabase } from '../lib/supabase';
 import { Search, User, ChevronRight, Filter, ChevronDown, SortAsc, SortDesc, Calendar, Wallet } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTheme } from '../components/ThemeProvider';
 import { useSettingsStore } from '../store/useSettingsStore';
@@ -15,24 +15,33 @@ interface Profile {
   avatar_url?: string;
   created_at: string;
   member_wallets?: { balance: number }[];
+  member_plans?: { status: string; next_due_date: string | null }[];
 }
 
 type SortOption = 'name' | 'date' | 'balance';
+type FilterType = 'all' | 'admin' | 'member' | 'pending' | 'overdue';
 
 export default function MemberList() {
   const theme = useTheme();
+  const location = useLocation();
   const settings = useSettingsStore(state => state.settings);
   const [members, setMembers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'member' | 'pending'>('all');
+  const [roleFilter, setRoleFilter] = useState<FilterType>('all');
   const [sortBy, setSortBy] = useState<SortOption>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const filterParam = params.get('filter');
+    if (filterParam === 'overdue') {
+      setRoleFilter('overdue');
+      setShowFilters(true);
+    }
     fetchMembers();
-  }, []);
+  }, [location.search]);
 
   const fetchMembers = async () => {
     try {
@@ -43,6 +52,10 @@ export default function MemberList() {
           *,
           member_wallets (
             balance
+          ),
+          member_plans (
+            status,
+            next_due_date
           )
         `);
 
@@ -70,7 +83,10 @@ export default function MemberList() {
         member.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         member.email?.toLowerCase().includes(searchQuery.toLowerCase());
       
-      const matchesRole = roleFilter === 'all' || member.role === roleFilter;
+      const matchesRole = roleFilter === 'all' || 
+                         (roleFilter === 'overdue' 
+                           ? member.member_plans?.some(p => p.status === 'active' && p.next_due_date && p.next_due_date < new Date().toISOString().split('T')[0])
+                           : member.role === roleFilter);
       
       return matchesSearch && matchesRole;
     })
@@ -130,7 +146,7 @@ export default function MemberList() {
                 <div className="flex flex-col gap-2">
                   <span className="text-[12px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider ml-1">রোল ফিল্টার</span>
                   <div className="flex flex-wrap gap-2">
-                    {(['all', 'admin', 'member', 'pending'] as const).map((r) => (
+                    {(['all', 'admin', 'member', 'pending', 'overdue'] as const).map((r) => (
                       <button
                         key={r}
                         onClick={() => setRoleFilter(r)}
@@ -141,7 +157,7 @@ export default function MemberList() {
                         }`}
                         style={roleFilter === r ? { color: theme.primary, backgroundColor: `${theme.primary}1A`, borderColor: `${theme.primary}33` } : {}}
                       >
-                        {r === 'all' ? 'সবাই' : r === 'admin' ? 'অ্যাডমিন' : r === 'member' ? 'সদস্য' : 'পেন্ডিং'}
+                        {r === 'all' ? 'সবাই' : r === 'admin' ? 'অ্যাডমিন' : r === 'member' ? 'সদস্য' : r === 'pending' ? 'পেন্ডিং' : 'বকেয়া'}
                       </button>
                     ))}
                   </div>
@@ -248,6 +264,11 @@ export default function MemberList() {
                       }`}>
                         {member.role === 'admin' ? 'অ্যাডমিন' : member.role === 'member' ? 'সদস্য' : 'অপেক্ষমান'}
                       </span>
+                      {member.member_plans?.some(p => p.status === 'active' && p.next_due_date && p.next_due_date < new Date().toISOString().split('T')[0]) && (
+                        <span className="text-[10px] px-2.5 py-0.5 rounded-[10px] font-bold bangla tracking-wide border bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-500 border-rose-100 dark:border-rose-500/20 shadow-sm animate-pulse">
+                          বকেয়া কিস্তি
+                        </span>
+                      )}
                       <span className="text-[12px] text-slate-400 dark:text-slate-500 truncate opacity-80 font-medium">{member.email}</span>
                     </div>
                   </div>

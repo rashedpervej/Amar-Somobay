@@ -172,10 +172,45 @@ export default function Dashboard() {
         <div className="grid grid-cols-2 gap-[12px] mt-4">
           {[
             { id: 'total-members', label: "মোট সদস্য", value: adminStats.totalMembers, color: "text-primary", icon: <Users />, bg: "bg-primary/10" },
-            { id: 'active-plans', label: "সক্রিয় প্ল্যান", value: adminStats.activePlans, color: "text-blue-500", icon: <TrendingUp />, bg: "bg-blue-50" },
             { id: 'total-collections', label: "মোট কালেকশন", value: `৳${adminStats.totalCollections.toLocaleString()}`, color: "text-emerald-600", icon: <HandCoins />, bg: "bg-emerald-50" },
-            { id: 'overdue-members', label: "বকেয়া সদস্য", value: adminStats.overdueMembers, color: "text-rose-500", icon: <Clock />, bg: "bg-rose-50" },
-            { id: 'pending-dues', label: "পেন্ডিং কিস্তি", value: `৳${adminStats.pendingDues.toLocaleString()}`, color: "text-orange-500", icon: <AlertCircle />, bg: "bg-orange-50" },
+            { 
+              id: 'merged-plans', 
+              label: "প্ল্যান ও এনরোলমেন্ট", 
+              customValue: (
+                <div className="flex flex-col gap-0.5">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-[24px] font-extrabold bangla">{adminStats.activePlanTypes}</span>
+                    <span className="text-[11px] text-slate-400 dark:text-slate-500 bangla font-bold">প্ল্যান</span>
+                  </div>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-[18px] font-bold text-blue-500/80 dark:text-blue-400 bangla">{adminStats.activeEnrollments}</span>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 bangla font-medium">এনরোলমেন্ট</span>
+                  </div>
+                </div>
+              ),
+              color: "text-blue-500", 
+              icon: <Activity />, 
+              bg: "bg-blue-50" 
+            },
+            { 
+              id: 'merged-overdue', 
+              label: "বকেয়া ও পেন্ডিং", 
+              customValue: (
+                <div className="flex flex-col gap-0.5">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-[24px] font-extrabold bangla text-rose-500">{adminStats.overdueMembers}</span>
+                    <span className="text-[11px] text-slate-400 dark:text-slate-500 bangla font-bold">সদস্য</span>
+                  </div>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-[16px] font-bold text-orange-500/80 bangla">৳{adminStats.pendingDues.toLocaleString()}</span>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 bangla font-medium">বকেয়া</span>
+                  </div>
+                </div>
+              ),
+              color: "text-rose-500", 
+              icon: <Clock />, 
+              bg: "bg-rose-50" 
+            },
             settings?.is_wallet_enabled !== false && { id: 'total-savings', label: "মোট সঞ্চয়", value: `৳${totalSavings.toLocaleString()}`, color: "text-slate-600", icon: <HandCoins />, bg: "bg-slate-100" },
           ].filter(Boolean).map((stat: any, i) => (
             <motion.div
@@ -183,15 +218,34 @@ export default function Dashboard() {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05, duration: 0.4, ease: "easeOut" }}
-              className={stat.id === 'total-collections' ? "col-span-2" : ""}
+              onClick={() => {
+                if (stat.id === 'merged-overdue') {
+                  navigate('/members?filter=overdue');
+                }
+              }}
+              className={stat.id === 'total-savings' ? "col-span-2" : "col-span-1"}
             >
-              <StatCard 
-                label={stat.label}
-                value={loading ? '-' : stat.value}
-                textColor={stat.color}
-                icon={stat.icon}
-                iconBgColor={stat.bg}
-              />
+              {stat.customValue ? (
+                <div className={`dark-card rounded-[22px] p-4 relative overflow-hidden flex flex-col justify-between h-[124px] ${stat.id === 'merged-overdue' ? 'cursor-pointer active:scale-[0.98] transition-all hover:border-rose-200 dark:hover:border-rose-900/30' : ''}`}>
+                  <div className="z-10 flex flex-col gap-1 w-full">
+                    <span className="text-[13px] text-slate-500 dark:text-slate-400/80 bangla font-semibold tracking-wide uppercase opacity-80">{stat.label}</span>
+                  </div>
+                  <div className="z-10 flex justify-between items-end w-full">
+                    {stat.customValue}
+                    <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shadow-sm shrink-0 transition-transform active:scale-95 ${stat.bg} ${stat.color}`}>
+                      {React.cloneElement(stat.icon as React.ReactElement, { size: 20, strokeWidth: 2.5 })}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <StatCard 
+                  label={stat.label}
+                  value={loading ? '-' : stat.value}
+                  textColor={stat.color}
+                  icon={stat.icon}
+                  iconBgColor={stat.bg}
+                />
+              )}
             </motion.div>
           ))}
         </div>

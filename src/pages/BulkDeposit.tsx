@@ -188,20 +188,20 @@ export default function BulkDeposit() {
             <select 
               value={statusFilter}
               onChange={e => setStatusFilter(e.target.value)}
-              className="bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-xl px-4 py-3 text-[13px] font-bold bangla outline-none text-slate-700 dark:text-slate-300"
+              className="bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-white/10 rounded-xl px-4 py-3 text-[13px] font-bold bangla outline-none text-slate-700 dark:text-slate-300 cursor-pointer"
             >
-              <option value="all">সকল স্ট্যাটাস</option>
-              <option value="active">সক্রিয় সদস্য</option>
-              <option value="inactive">নিষ্ক্রিয় সদস্য</option>
+              <option value="all" className="bg-white dark:bg-slate-900">সকল স্ট্যাটাস</option>
+              <option value="active" className="bg-white dark:bg-slate-900">সক্রিয় সদস্য</option>
+              <option value="inactive" className="bg-white dark:bg-slate-900">নিষ্ক্রিয় সদস্য</option>
             </select>
             <select 
               value={categoryFilter}
               onChange={e => setCategoryFilter(e.target.value)}
-              className="bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-xl px-4 py-3 text-[13px] font-bold bangla outline-none text-slate-700 dark:text-slate-300"
+              className="bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-white/10 rounded-xl px-4 py-3 text-[13px] font-bold bangla outline-none text-slate-700 dark:text-slate-300 cursor-pointer"
             >
-              <option value="all">সকল ক্যাটাগরি</option>
-              <option value="General">General</option>
-              <option value="Premium">Premium</option>
+              <option value="all" className="bg-white dark:bg-slate-900">সকল ক্যাটাগরি</option>
+              <option value="General" className="bg-white dark:bg-slate-900">General</option>
+              <option value="Premium" className="bg-white dark:bg-slate-900">Premium</option>
             </select>
           </div>
 

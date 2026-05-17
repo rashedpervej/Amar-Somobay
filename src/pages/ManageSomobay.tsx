@@ -354,57 +354,80 @@ export default function ManageSomobay() {
         </div>
 
         <div className="flex flex-col gap-3">
-          {memberPlans.map((mp: any, i) => (
-            <motion.div 
-              key={mp.id}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: (i + 2) * 0.05, duration: 0.4, ease: "easeOut" }}
-              onClick={() => {
-                setSelectedMemberPlan(mp);
-                setPaymentData({ ...paymentData, amount: mp.plan?.installment_amount || 0 });
-                setShowPayment(true);
-              }}
-              className="bg-white dark:bg-slate-900 rounded-[24px] p-4 flex flex-col gap-3 shadow-sm border border-slate-50 dark:border-slate-800"
-            >
-              <div className="flex justify-between items-center">
-                <div className="flex flex-col">
-                  <span className="text-[16px] font-bold text-slate-800 dark:text-slate-200 bangla">{mp.profiles?.full_name}</span>
-                  <span className="text-[12px] text-slate-400 bangla font-medium">প্ল্যান: {mp.plan?.name}</span>
+          {memberPlans.map((mp: any, i) => {
+            const isOverdue = mp.status === 'active' && 
+                             mp.next_due_date && 
+                             new Date(mp.next_due_date) < new Date();
+            
+            return (
+              <motion.div 
+                key={mp.id}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: (i + 2) * 0.05, duration: 0.4, ease: "easeOut" }}
+                onClick={() => {
+                  setSelectedMemberPlan(mp);
+                  setPaymentData({ ...paymentData, amount: mp.plan?.installment_amount || 0 });
+                  setShowPayment(true);
+                }}
+                className={`group rounded-[24px] p-4 flex flex-col gap-3 shadow-sm border transition-all duration-300 relative overflow-hidden ${
+                  isOverdue 
+                    ? 'bg-rose-50/40 dark:bg-rose-500/5 border-rose-200/60 dark:border-rose-500/20 shadow-rose-100/50 dark:shadow-none active:scale-[0.98]' 
+                    : 'bg-white dark:bg-slate-900 border-slate-50 dark:border-slate-800'
+                }`}
+              >
+                {/* Floating Overdue Badge */}
+                {isOverdue && (
+                  <div className="absolute -right-8 -top-8 w-24 h-24 bg-rose-500/5 rounded-full blur-2xl group-hover:bg-rose-500/10 transition-colors" />
+                )}
+                
+                <div className="flex justify-between items-center relative z-10">
+                  <div className="flex flex-col">
+                    <span className="text-[16px] font-bold text-slate-800 dark:text-slate-200 bangla">{mp.profiles?.full_name}</span>
+                    <span className="text-[12px] text-slate-400 bangla font-medium">প্ল্যান: {mp.plan?.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {isOverdue && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-lg font-bold bangla bg-rose-500 text-white shadow-sm shadow-rose-500/20 flex items-center gap-1">
+                        <Clock size={10} strokeWidth={3} />
+                        বকেয়া
+                      </span>
+                    )}
+                    <div className={`px-3 py-1 rounded-full text-[10px] font-bold bangla uppercase tracking-wider ${
+                      mp.status === 'active' ? 'bg-emerald-50 text-emerald-500' : 'bg-slate-100 text-slate-400'
+                    }`}>
+                      {mp.status === 'active' ? 'সক্রিয়' : 'বন্ধ'}
+                    </div>
+                  </div>
                 </div>
-                <div className={`px-3 py-1 rounded-full text-[10px] font-bold bangla uppercase tracking-wider ${
-                  mp.status === 'active' ? 'bg-emerald-50 text-emerald-500' : 'bg-slate-100 text-slate-400'
-                }`}>
-                  {mp.status === 'active' ? 'সক্রিয়' : 'বন্ধ'}
-                </div>
-              </div>
 
-              <div className="w-full h-1.5 bg-slate-50 dark:bg-slate-800 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-primary rounded-full" 
-                  style={{ width: `${(mp.total_collected / mp.plan?.target_amount) * 100}%` }}
-                />
-              </div>
+                <div className="w-full h-1.5 bg-slate-50 dark:bg-slate-800 rounded-full overflow-hidden relative z-10">
+                  <div 
+                    className={`h-full rounded-full ${isOverdue ? 'bg-rose-500' : 'bg-primary'}`}
+                    style={{ width: `${Math.min(100, (mp.total_collected / (mp.plan?.target_amount || 1)) * 100)}%` }}
+                  />
+                </div>
 
-              <div className="flex justify-between items-center text-[11px] bangla text-slate-400 font-medium">
-                <div className="flex flex-col gap-0.5">
-                  <span>সংগৃহীত</span>
-                  <span className="text-[14px] font-black text-slate-700 dark:text-slate-300">৳{mp.total_collected.toLocaleString()}</span>
+                <div className="flex justify-between items-center text-[11px] bangla text-slate-400 font-medium relative z-10">
+                  <div className="flex flex-col gap-0.5">
+                    <span>সংগৃহীত</span>
+                    <span className={`text-[14px] font-black ${isOverdue ? 'text-rose-600 dark:text-rose-400' : 'text-slate-700 dark:text-slate-300'}`}>৳{mp.total_collected.toLocaleString()}</span>
+                  </div>
+                  <div className="flex flex-col gap-0.5 text-right">
+                    <span>পরবর্তী কিস্তি</span>
+                    <span className={`text-[13px] font-bold ${isOverdue ? 'text-rose-500 animate-pulse' : 'text-orange-500'}`}>
+                      {(() => {
+                        const [y, m, d] = mp.next_due_date.split('-').map(Number);
+                        const date = new Date(y, m - 1, d);
+                        const dayName = ['রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহস্পতি', 'শুক্র', 'শনি'][date.getDay()];
+                        return `${date.toLocaleDateString('bn-BD', { day: 'numeric', month: 'short' })} (${dayName})`;
+                      })()}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex flex-col gap-0.5 text-right">
-                  <span>পরবর্তী কিস্তি</span>
-                  <span className="text-[13px] font-bold text-orange-500">
-                    {(() => {
-                      const [y, m, d] = mp.next_due_date.split('-').map(Number);
-                      const date = new Date(y, m - 1, d);
-                      const dayName = ['রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহস্পতি', 'শুক্র', 'শনি'][date.getDay()];
-                      return `${date.toLocaleDateString('bn-BD', { day: 'numeric', month: 'short' })} (${dayName})`;
-                    })()}
-                  </span>
-                </div>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </div>
       </div>
 
@@ -643,6 +666,7 @@ export default function ManageSomobay() {
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; }
       `}</style>
     </MobileLayout>
   );

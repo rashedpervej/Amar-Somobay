@@ -41,6 +41,7 @@ export default function SavingsHistory() {
     type: ''
   });
   const [members, setMembers] = useState<any[]>([]);
+  const [membersInPlan, setMembersInPlan] = useState<any[]>([]);
 
   useEffect(() => {
     if (profile?.id) {
@@ -55,7 +56,26 @@ export default function SavingsHistory() {
 
   const fetchMembers = async () => {
     const { data } = await supabase.from('profiles').select('id, full_name').eq('role', 'member');
-    if (data) setMembers(data);
+    if (data) {
+      setMembers(data);
+      setMembersInPlan(data);
+    }
+  };
+
+  const fetchMembersOfPlan = async (planId: string) => {
+    if (!planId) {
+      setMembersInPlan(members);
+      return;
+    }
+    const { data } = await supabase
+      .from('member_plans')
+      .select('member_id, profiles(id, full_name)')
+      .eq('plan_id', planId);
+    
+    if (data) {
+      const planMembers = data.map((mp: any) => mp.profiles).filter(Boolean);
+      setMembersInPlan(planMembers);
+    }
   };
 
   const handleApplyFilters = () => {
@@ -141,31 +161,43 @@ export default function SavingsHistory() {
             </div>
 
             <div className="flex flex-col gap-5">
+              <div className="flex flex-col gap-2">
+                <span className="text-[12px] font-bold text-slate-400 dark:text-slate-500 bangla uppercase tracking-widest pl-1">প্ল্যান নির্বাচন</span>
+                <select 
+                  value={filters.planId}
+                  onChange={(e) => {
+                    const newPlanId = e.target.value;
+                    setFilters(f => ({ ...f, planId: newPlanId, memberId: '' }));
+                    fetchMembersOfPlan(newPlanId);
+                  }}
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-white/10 rounded-2xl p-3.5 text-[14px] bangla focus:ring-2 focus:ring-primary/20 outline-none transition-all text-slate-800 dark:text-white cursor-pointer"
+                >
+                  <option value="" className="bg-white dark:bg-slate-900">সকল প্ল্যান</option>
+                  {plans.map(p => (
+                    <option key={p.id} value={p.id} className="bg-white dark:bg-slate-900 font-medium">
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               {isAdmin && (
                 <div className="flex flex-col gap-2">
                   <span className="text-[12px] font-bold text-slate-400 dark:text-slate-500 bangla uppercase tracking-widest pl-1">সদস্য নির্বাচন</span>
                   <select 
                     value={filters.memberId}
                     onChange={(e) => setFilters(f => ({ ...f, memberId: e.target.value }))}
-                    className="w-full bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-2xl p-3.5 text-[14px] bangla focus:ring-2 focus:ring-primary/20 outline-none transition-all dark:text-white"
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-white/10 rounded-2xl p-3.5 text-[14px] bangla focus:ring-2 focus:ring-primary/20 outline-none transition-all text-slate-800 dark:text-white cursor-pointer"
                   >
-                    <option value="">সকল সদস্য</option>
-                    {members.map(m => <option key={m.id} value={m.id}>{m.full_name}</option>)}
+                    <option value="" className="bg-white dark:bg-slate-900">{filters.planId ? 'প্ল্যানের সকল সদস্য' : 'সকল সদস্য'}</option>
+                    {membersInPlan.map(m => (
+                      <option key={m.id} value={m.id} className="bg-white dark:bg-slate-900 font-medium">
+                        {m.full_name}
+                      </option>
+                    ))}
                   </select>
                 </div>
               )}
-
-              <div className="flex flex-col gap-2">
-                <span className="text-[12px] font-bold text-slate-400 dark:text-slate-500 bangla uppercase tracking-widest pl-1">প্ল্যান নির্বাচন</span>
-                <select 
-                  value={filters.planId}
-                  onChange={(e) => setFilters(f => ({ ...f, planId: e.target.value }))}
-                  className="w-full bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-2xl p-3.5 text-[14px] bangla focus:ring-2 focus:ring-primary/20 outline-none transition-all dark:text-white"
-                >
-                  <option value="">সকল প্ল্যান</option>
-                  {plans.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
-              </div>
 
               <div className="flex flex-col gap-2">
                 <span className="text-[12px] font-bold text-slate-400 dark:text-slate-500 bangla uppercase tracking-widest pl-1">লেনদেনের ধরণ</span>

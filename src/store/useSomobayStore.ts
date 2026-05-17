@@ -49,7 +49,8 @@ interface SomobayState {
   
   adminStats: {
     totalMembers: number;
-    activePlans: number;
+    activePlanTypes: number;
+    activeEnrollments: number;
     totalCollections: number;
     overdueMembers: number;
     pendingDues: number;
@@ -77,7 +78,8 @@ export const useSomobayStore = create<SomobayState>((set, get) => ({
   loading: false,
   adminStats: {
     totalMembers: 0,
-    activePlans: 0,
+    activePlanTypes: 0,
+    activeEnrollments: 0,
     totalCollections: 0,
     overdueMembers: 0,
     pendingDues: 0
@@ -127,27 +129,31 @@ export const useSomobayStore = create<SomobayState>((set, get) => ({
       // 1. Total Members
       const { count: membersCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'member');
 
-      // 2. Active Plans & Overdue Info
+      // 2. Active Plan Types (Templates)
+      const { count: planTypesCount } = await supabase.from('somobay_plans').select('*', { count: 'exact', head: true }).eq('is_active', true);
+
+      // 3. Active Enrollments & Overdue Info
       const { data: plansData } = await supabase.from('member_plans').select('id, next_due_date, status, plan:somobay_plans(installment_amount)');
       
-      const activePlans = plansData?.filter(p => p.status === 'active') || [];
-      const overduePlans = activePlans.filter(p => p.next_due_date && p.next_due_date < today);
+      const activeEnrollments = plansData?.filter(p => p.status === 'active') || [];
+      const overduePlans = activeEnrollments.filter(p => p.next_due_date && p.next_due_date < today);
       
       // Calculate pending dues (rough estimate)
       const pendingDues = overduePlans.reduce((acc, curr) => acc + ((curr.plan as any)?.installment_amount || 0), 0);
 
-      // 3. Total Collections from All Time
+      // 4. Total Collections from All Time
       const { data: paymentsData } = await supabase.from('plan_payments').select('amount');
       const totalCollections = paymentsData?.reduce((acc, curr) => acc + curr.amount, 0) || 0;
 
-      // 4. Overdue Members (Unique members)
+      // 5. Overdue Members (Unique members)
       const { data: overdueMembersData } = await supabase.from('member_plans').select('member_id').eq('status', 'active').lt('next_due_date', today);
       const overdueMembersCount = new Set(overdueMembersData?.map(m => m.member_id)).size;
 
       set({
         adminStats: {
           totalMembers: membersCount || 0,
-          activePlans: activePlans.length,
+          activePlanTypes: planTypesCount || 0,
+          activeEnrollments: activeEnrollments.length,
           totalCollections,
           overdueMembers: overdueMembersCount,
           pendingDues
