@@ -25,7 +25,8 @@ import {
   ArrowDownLeft,
   Activity,
   TrendingUp,
-  AlertCircle
+  AlertCircle,
+  Calendar
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { motion } from 'motion/react';
@@ -319,56 +320,80 @@ export default function Dashboard() {
         animate={{ opacity: 1, y: 0 }}
         whileHover={{ scale: 1.01 }}
         whileTap={{ scale: 0.98 }}
-        className="w-full mt-6 rounded-[34px] overflow-hidden shadow-2xl shadow-primary/25 relative cursor-pointer group"
-        style={{ 
-          background: `linear-gradient(225deg, ${theme.primary}, ${theme.secondary}, ${theme.primary})`,
-        }}
+        className="w-full mt-6 relative cursor-pointer group rounded-[24px] overflow-hidden"
+        style={{ backgroundColor: "#02362F" }}
         onClick={() => navigate('/somobay/my')}
       >
-        {/* Decorative elements */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/25 rounded-full -mr-32 -mt-32 blur-3xl transition-all duration-1000 group-hover:bg-white/30" />
-        <div className="absolute bottom-0 left-0 w-40 h-40 bg-black/20 rounded-full -ml-20 -mb-20 blur-3xl opacity-60" />
-        
-        <div className="p-8 text-white relative z-10">
-          <div className="flex justify-between items-start mb-10">
-            <div className="flex flex-col gap-1">
-              <span className="text-[13px] bangla font-bold text-white/90 uppercase tracking-widest opacity-80">সমবায় সারসংক্ষেপ</span>
-              <div className="h-0.5 w-8 bg-white/50 rounded-full" />
+        <div 
+          style={{ 
+            height: "201px", 
+            backgroundColor: "#02362F",
+            backgroundImage: "url('https://jkxmcbzipmcmyiwfqupx.supabase.co/storage/v1/object/public/branding/cad%20bg.webp')" 
+          }}
+          className="relative w-full overflow-hidden p-[16px] pb-[12px] bg-cover bg-center text-white shadow-2xl border border-white/5 flex flex-col justify-between"
+        >
+          {/* Header element */}
+          <div 
+            className="relative flex justify-between items-center z-10 transition-transform duration-150"
+            style={{
+              transform: `translate(0px, 0px) scale(1)`,
+              transformOrigin: 'left center'
+            }}
+          >
+            <div>
+              <h3 className="font-bold text-[14.5px] bangla">সমবায় সারসংক্ষেপ</h3>
+              <div className="w-[44px] h-[2.5px] bg-emerald-400 mt-1 rounded" />
             </div>
-            <div className="bg-white/20 backdrop-blur-xl px-4 py-1.5 rounded-2xl flex items-center gap-2 border border-white/25 shadow-sm">
-              <Activity size={14} className="animate-pulse" />
-              <span className="text-[11px] bangla font-black tracking-tighter uppercase">{activePlansCount}টি সক্রিয়</span>
-            </div>
+            <button className="flex items-center gap-1 bg-white/10 border border-white/20 rounded-full px-2.5 py-1 text-[10px] bangla font-bold">
+              <span>বিস্তারিত দেখুন</span> <ChevronRight size={10} />
+            </button>
           </div>
-          
-          <div className="flex flex-col gap-2 mb-10">
-            <div className="flex justify-between items-end">
-              <span className="text-[38px] font-black bangla leading-none drop-shadow-md">{overallProgress}%</span>
-              <span className="text-[13px] bangla font-bold opacity-80 uppercase tracking-widest">গড় অগ্রগতি</span>
+
+          {/* Main progress stats grid wrapper */}
+          <div className="relative grid grid-cols-[100px_1fr] gap-3 items-center z-10 mb-2">
+            
+            {/* Progress Circular visual segment */}
+            <div 
+              className="relative w-[80px] h-[80px] border-4 border-emerald-400 rounded-full flex flex-col items-center justify-center transition-transform duration-150"
+              style={{
+                transform: `translate(12px, 8px) scale(1.3)`,
+                transformOrigin: 'center'
+              }}
+            >
+              <span className="text-[20px] font-bold">{overallProgress}%</span>
+              <span className="text-[8px] opacity-80 bangla">গড় অগ্রগতি</span>
             </div>
-            <div className="w-full h-2.5 bg-black/20 rounded-full overflow-hidden border border-white/10 p-[1px]">
-              <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: `${overallProgress}%` }}
-                transition={{ duration: 1, ease: "easeOut" }}
-                className="h-full bg-white rounded-full shadow-[0_0_15px_rgba(255,255,255,0.5)]" 
-              />
+
+            {/* Stats text details sidebar segment */}
+            <div 
+              className="flex flex-col gap-2 text-[12px] pl-2 border-l border-white/10 bangla transition-transform duration-150"
+              style={{
+                transform: `translate(30px, 7px) scale(1.1)`,
+                transformOrigin: 'left center'
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <Calendar size={12} className="text-emerald-400" />
+                <div>
+                  <p className="text-[8px] opacity-60">পরবর্তী কিস্তি</p>
+                  <p className="font-semibold leading-tight text-[11px]">
+                    {earliestNextDue 
+                      ? new Date(earliestNextDue).toLocaleDateString('bn-BD', { day: 'numeric', month: 'long', year: 'numeric' }) 
+                      : 'কিস্তি নেই'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <AlertCircle size={12} className="text-amber-400" />
+                <div>
+                  <p className="text-[8px] opacity-60">বকেয়া কিস্তি</p>
+                  <p className="font-semibold leading-tight text-[11px]">
+                    {overdueMemberPlans.length > 0 ? `${overdueMemberPlans.length.toLocaleString('bn-BD')} টি` : 'বকেয়া নেই'}
+                  </p>
+                </div>
+              </div>
             </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-6 pt-6 border-t border-white/20">
-            <div className="flex flex-col gap-1">
-              <span className="text-[12px] bangla text-white/80 font-bold uppercase tracking-tight opacity-75">পরবর্তী কিস্তি</span>
-              <span className="text-[16px] font-black bangla tracking-tight leading-none">
-                {earliestNextDue ? new Date(earliestNextDue).toLocaleDateString('bn-BD', { day: 'numeric', month: 'short' }) : 'নেই'}
-              </span>
-            </div>
-            <div className="flex flex-col gap-1 border-l border-white/10 pl-6">
-              <span className="text-[12px] bangla text-white/80 font-bold uppercase tracking-tight opacity-75">বকেয়া কিস্তি</span>
-              <span className="text-[20px] font-black bangla tracking-tight leading-none">
-                {overdueMemberPlans.length > 0 ? overdueMemberPlans.length : '০'}টি
-              </span>
-            </div>
+
           </div>
         </div>
       </motion.div>
