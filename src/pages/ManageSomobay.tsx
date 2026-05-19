@@ -12,87 +12,47 @@ import {
   Users, 
   Clock, 
   ChevronRight, 
-  CheckCircle2, 
   AlertCircle,
-  ArrowRight,
   PiggyBank,
   Bell,
-  History
+  LayoutGrid
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useNavigate } from 'react-router-dom';
 
 export default function ManageSomobay() {
   const { profile } = useAuthStore();
-  const { plans, memberPlans, fetchPlans, fetchMemberPlans, createPlan, updatePlan, enrollMember, recordPayment, sendReminders, loading } = useSomobayStore();
+  const { plans, memberPlans, fetchPlans, fetchMemberPlans, createPlan, updatePlan, loading } = useSomobayStore();
   const theme = useTheme();
+  const navigate = useNavigate();
   
   const [showAddPlan, setShowAddPlan] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
-  const [showEnroll, setShowEnroll] = useState(false);
-  const [showPayment, setShowPayment] = useState(false);
   const [isSendingReminders, setIsSendingReminders] = useState(false);
   
-  const [selectedPlan, setSelectedPlan] = useState<any>(null);
-  const [selectedProfile, setSelectedProfile] = useState<any>(null);
-  const [selectedMemberPlan, setSelectedMemberPlan] = useState<any>(null);
-  const [members, setMembers] = useState<any[]>([]);
-
-  // Form states
   const [newPlan, setNewPlan] = useState({
     name: '',
     description: '',
     duration_months: 12,
     installment_amount: 1000,
-    frequency: 'monthly',
+    frequency: 'monthly' as 'weekly' | 'monthly' | 'custom',
     due_day: 0,
     due_date: 1,
     target_amount: 12000,
     profit_percentage: 10,
-    late_fee_amount: 50
-  });
-
-  const [paymentData, setPaymentData] = useState({
-    amount: 0,
-    penalty: 0,
-    note: ''
+    late_fee_amount: 50,
+    status: 'active' as 'active' | 'paused' | 'completed',
+    created_at: new Date().toISOString().split('T')[0]
   });
 
   useEffect(() => {
     fetchPlans();
     fetchMemberPlans();
-    
-    // Fetch members for enrollment
-    const loadMembers = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('id, full_name, phone, role')
-          .eq('role', 'member');
-        
-        if (error) {
-          console.error('Error fetching members:', error);
-          // Try a very simple query as fallback
-          const { data: simpleData, error: simpleError } = await supabase.from('profiles').select('id, full_name, role');
-          if (!simpleError && simpleData) {
-            setMembers(simpleData.filter(p => p.role === 'member'));
-          }
-        } else if (data) {
-          setMembers(data);
-        }
-      } catch (err) {
-        console.error('Failed to load members:', err);
-      }
-    };
-
-    loadMembers();
   }, [fetchPlans, fetchMemberPlans]);
 
   const handleCreatePlan = async () => {
     try {
-      console.log('Saving plan...', { isEditing, editingPlanId, newPlan });
-      
-      // Sanitize fields based on frequency
       const planData: any = { 
         name: newPlan.name,
         description: newPlan.description,
@@ -101,7 +61,10 @@ export default function ManageSomobay() {
         frequency: newPlan.frequency,
         target_amount: Number(newPlan.target_amount),
         profit_percentage: Number(newPlan.profit_percentage),
-        late_fee_amount: Number(newPlan.late_fee_amount)
+        late_fee_amount: Number(newPlan.late_fee_amount),
+        status: newPlan.status,
+        is_active: newPlan.status === 'active',
+        created_at: new Date(newPlan.created_at).toISOString()
       };
       
       if (newPlan.frequency === 'weekly') {
@@ -110,24 +73,9 @@ export default function ManageSomobay() {
       } else if (newPlan.frequency === 'monthly') {
         planData.due_date = newPlan.due_date;
         planData.due_day = null;
-      } else {
-        planData.due_day = null;
-        planData.due_date = null;
       }
 
       if (isEditing && editingPlanId) {
-        const activeParticipants = memberPlans.filter(mp => mp.plan_id === editingPlanId && mp.status === 'active').length;
-        
-        // Use a simpler check if confirm is problematic
-        let shouldSave = true;
-        if (activeParticipants > 0) {
-          shouldSave = window.confirm(
-            `এই প্ল্যানটিতে ${activeParticipants} জন সক্রিয় সদস্য রয়েছেন। পরিবর্তন করলে তাদের হিসাবে সমস্যা হতে পারে। আপনি কি নিশ্চিত?`
-          );
-        }
-        
-        if (!shouldSave) return;
-        
         await updatePlan(editingPlanId, planData);
       } else {
         await createPlan(planData);
@@ -136,7 +84,6 @@ export default function ManageSomobay() {
       setShowAddPlan(false);
       resetPlanForm();
     } catch (e: any) {
-      console.error('Save error:', e);
       alert('Error: ' + (e.message || 'Unknown error'));
     }
   };
@@ -152,16 +99,15 @@ export default function ManageSomobay() {
       due_date: 1,
       target_amount: 12000,
       profit_percentage: 10,
-      late_fee_amount: 50
+      late_fee_amount: 50,
+      status: 'active',
+      created_at: new Date().toISOString().split('T')[0]
     });
     setIsEditing(false);
     setEditingPlanId(null);
   };
 
   const startEditPlan = (plan: SomobayPlan) => {
-    // Check for participants but allow editing even if they exist (with warning handled in handleCreatePlan confirm)
-    // We already have a confirmation in handleCreatePlan, we don't necessarily need to block opening the modal
-    
     setNewPlan({
       name: plan.name,
       description: plan.description || '',
@@ -172,63 +118,38 @@ export default function ManageSomobay() {
       due_date: plan.due_date ?? 1,
       target_amount: plan.target_amount,
       profit_percentage: plan.profit_percentage,
-      late_fee_amount: plan.late_fee_amount
+      late_fee_amount: plan.late_fee_amount,
+      status: plan.status || 'active',
+      created_at: plan.created_at ? new Date(plan.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
     });
     setIsEditing(true);
     setEditingPlanId(plan.id);
     setShowAddPlan(true);
   };
 
-  const handleEnroll = async () => {
-    if (!selectedProfile || !selectedPlan) return;
-    try {
-      await enrollMember(
-        selectedProfile.id, 
-        selectedPlan.id, 
-        selectedPlan.duration_months,
-        selectedPlan.frequency
-      );
-      setShowEnroll(false);
-      setSelectedProfile(null);
-    } catch (e: any) {
-      alert('Enrollment error: ' + (e.message || 'Member already enrolled or error occurred'));
-    }
-  };
-
-  const handlePayment = async () => {
-    if (!selectedMemberPlan || !profile) return;
-    try {
-      await recordPayment({
-        memberPlanId: selectedMemberPlan.id,
-        amount: paymentData.amount,
-        penalty: paymentData.penalty,
-        adminId: profile.id,
-        note: paymentData.note
-      });
-      setShowPayment(false);
-      setSelectedMemberPlan(null);
-    } catch (e: any) {
-      alert('Error recording payment: ' + (e.message || 'Unknown error'));
-    }
-  };
-
   const handleSendReminders = async () => {
+    const { sendReminders } = useSomobayStore.getState();
     setIsSendingReminders(true);
     try {
       const result = await sendReminders();
-      alert(`রিমাইন্ডার পাঠানো হয়েছে!\nনতুন নোটিফিকেশন: ${result.sent}\nআজকে পাঠানো হয়েছে এমন সদস্য: ${result.alreadyNotified}`);
+      alert(`রিমাইন্ডার পাঠানো হয়েছে!\nনতুন নোটিফিকেশন: ${result.sent}`);
     } catch (e: any) {
-      alert('রিমাইন্ডার পাঠাতে সমস্যা হয়েছে: ' + (e.message || 'Unknown error'));
+      alert('রিমাইন্ডার পাঠাতে সমস্যা হয়েছে');
     } finally {
       setIsSendingReminders(false);
     }
   };
 
-  const overdueCount = memberPlans.filter(mp => 
+  const overdueMembers = memberPlans.filter(mp => 
     mp.status === 'active' && 
     mp.next_due_date && 
     new Date(mp.next_due_date) < new Date()
-  ).length;
+  );
+  const overdueCount = overdueMembers.length;
+  const overdueAmount = overdueMembers.reduce((sum, mp) => {
+    const plan = plans.find(p => p.id === mp.plan_id);
+    return sum + (plan?.installment_amount || 0);
+  }, 0);
 
   return (
     <MobileLayout>
@@ -254,7 +175,7 @@ export default function ManageSomobay() {
               <AlertCircle size={26} />
             </div>
             <div>
-              <h3 className="text-[16px] font-bold text-slate-800 dark:text-slate-100 bangla leading-tight">{overdueCount} জনের কিস্তি বকেয়া</h3>
+              <h3 className="text-[16px] font-bold text-slate-800 dark:text-slate-100 bangla leading-tight">{overdueCount} জন (৳{overdueAmount.toLocaleString('bn-BD')}) কিস্তি বকেয়া</h3>
               <p className="text-[12px] text-slate-500 dark:text-slate-400 bangla">সদস্যদের দ্রুত নোটিফিকেশন পাঠান</p>
             </div>
           </div>
@@ -274,156 +195,108 @@ export default function ManageSomobay() {
 
       {/* Plans Section */}
       <div className="mb-8">
-        <div className="flex items-center gap-2 mb-4 px-1">
-          <Settings size={18} className="text-slate-400" />
-          <h2 className="text-[16px] font-bold text-slate-500 dark:text-slate-400 bangla uppercase tracking-wider">সক্রিয় প্ল্যানসমূহ</h2>
+        <div className="flex items-center gap-2 mb-6 px-1">
+          <LayoutGrid size={18} className="text-slate-400" />
+          <h2 className="text-[16px] font-bold text-slate-500 dark:text-slate-400 bangla uppercase tracking-wider">সক্রিয় সমবায় প্ল্যানসমূহ</h2>
         </div>
         
-      <div className="relative -mx-4 px-4 overflow-hidden">
-        <motion.div 
-          drag="x"
-          dragConstraints={{ left: -((plans.length - 1) * 300), right: 0 }}
-          dragElastic={0.1}
-          className="flex gap-5 pb-6 cursor-grab active:cursor-grabbing"
-        >
-          {plans.map((plan, i) => (
-            <motion.div 
-              key={plan.id}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.1, duration: 0.5, ease: "easeOut" }}
-              className="min-w-[280px] w-[280px] bg-white dark:bg-slate-900 premium-shine rounded-[32px] p-6 shadow-sm border border-slate-50 dark:border-slate-800 relative overflow-hidden group"
-            >
-              <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -mr-8 -mt-8" />
-              <div className="flex justify-between items-start mb-2 relative z-20">
-                <h3 className="text-[18px] font-bold text-slate-800 dark:text-slate-200 bangla">{plan.name}</h3>
-                <button 
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    startEditPlan(plan);
-                  }}
-                  className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 transition-all active:scale-90 shadow-sm border border-slate-100 dark:border-slate-700"
-                >
-                  <Settings size={20} />
-                </button>
-              </div>
-              <div className="flex flex-wrap items-center gap-2 text-[12px] text-slate-400 bangla mb-4">
-                <div className="flex items-center gap-1">
-                  <Clock size={12} />
-                  <span>{plan.duration_months} মাস</span>
-                </div>
-                <span className="opacity-25">•</span>
-                <div className="flex items-center gap-1">
-                  <TrendingUp size={12} />
-                  <span>{plan.profit_percentage}% লাভ</span>
-                </div>
-                <span className="opacity-25">•</span>
-                <div className="flex items-center gap-1">
-                  <Calendar size={12} />
-                  <span>{plan.frequency === 'monthly' ? `প্রতি মাসের ${plan.due_date || 1} তারিখ` : plan.frequency === 'weekly' ? `প্রতি ${['রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহস্পতি', 'শুক্র', 'শনি'][plan.due_day ?? 0]}বার` : 'কাস্টম'}</span>
-                </div>
-              </div>
-              
-              <div className="flex justify-between items-end border-t border-slate-50 dark:border-slate-800/50 pt-4">
-                <div className="flex flex-col">
-                  <span className="text-[11px] text-slate-400 bangla uppercase">প্রতি কিস্তি</span>
-                  <span className="text-[17px] font-black text-primary bangla">৳{plan.installment_amount.toLocaleString()}</span>
-                </div>
-                <button 
-                  onClick={() => {
-                    setSelectedPlan(plan);
-                    setShowEnroll(true);
-                  }}
-                  className="px-4 py-2 bg-primary/10 text-primary rounded-xl text-[12px] font-bold bangla active:scale-95 transition-transform"
-                >
-                  সদস্য যোগ করুন
-                </button>
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
-      </div>
-    </div>
+        <div className="grid grid-cols-1 gap-5">
+          {plans.map((plan, i) => {
+            const planEnrollments = memberPlans.filter(mp => mp.plan_id === plan.id);
+            const activeInPlan = planEnrollments.filter(mp => mp.status === 'active').length;
+            const overdueInPlan = planEnrollments.filter(mp => 
+              mp.status === 'active' && mp.next_due_date && new Date(mp.next_due_date) < new Date()
+            ).length;
 
-      {/* Member Enrollments Section */}
-      <div>
-        <div className="flex items-center gap-2 mb-4 px-1">
-          <Users size={18} className="text-slate-400" />
-          <h2 className="text-[16px] font-bold text-slate-500 dark:text-slate-400 bangla uppercase tracking-wider">সদস্যের প্ল্যান স্ট্যাটাস</h2>
-        </div>
+            const totalPlanCollected = planEnrollments.reduce((acc, mp) => acc + mp.total_collected, 0);
+            const totalPlanTarget = plan.target_amount * planEnrollments.length;
+            const progress = totalPlanTarget > 0 ? Math.min(100, (totalPlanCollected / totalPlanTarget) * 100) : 0;
 
-        <div className="flex flex-col gap-3">
-          {memberPlans.map((mp: any, i) => {
-            const isOverdue = mp.status === 'active' && 
-                             mp.next_due_date && 
-                             new Date(mp.next_due_date) < new Date();
-            
+            const frequencyText = plan.frequency === 'weekly' 
+              ? `প্রতি ${['রবিবার', 'সোমবার', 'মঙ্গলবার', 'বুধবার', 'বৃহস্পতিবার', 'শুক্রবার', 'শনিবার'][plan.due_day ?? 0]}`
+              : plan.frequency === 'monthly'
+                ? `প্রতি মাসের ${plan.due_date ?? 1} তারিখ`
+                : 'কাস্টম সময়সূচী';
+
             return (
               <motion.div 
-                key={mp.id}
+                key={plan.id}
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: (i + 2) * 0.05, duration: 0.4, ease: "easeOut" }}
-                onClick={() => {
-                  setSelectedMemberPlan(mp);
-                  setPaymentData({ ...paymentData, amount: mp.plan?.installment_amount || 0 });
-                  setShowPayment(true);
-                }}
-                className={`group rounded-[24px] p-4 flex flex-col gap-3 shadow-sm border transition-all duration-300 relative overflow-hidden ${
-                  isOverdue 
-                    ? 'bg-rose-50/40 dark:bg-rose-500/5 border-rose-200/60 dark:border-rose-500/20 shadow-rose-100/50 dark:shadow-none active:scale-[0.98]' 
-                    : 'bg-white dark:bg-slate-900 border-slate-50 dark:border-slate-800'
-                }`}
+                transition={{ delay: i * 0.1, duration: 0.5, ease: "easeOut" }}
+                onClick={() => navigate(`/somobay/manage/${plan.id}`)}
+                className="bg-white dark:bg-slate-900 premium-shine rounded-[32px] p-6 shadow-sm border border-slate-50 dark:border-slate-800 relative overflow-hidden group active:scale-[0.98] transition-all cursor-pointer"
               >
-                {/* Floating Overdue Badge */}
-                {isOverdue && (
-                  <div className="absolute -right-8 -top-8 w-24 h-24 bg-rose-500/5 rounded-full blur-2xl group-hover:bg-rose-500/10 transition-colors" />
-                )}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-12 -mt-12 group-hover:scale-110 transition-transform duration-500" />
                 
-                <div className="flex justify-between items-center relative z-10">
-                  <div className="flex flex-col">
-                    <span className="text-[16px] font-bold text-slate-800 dark:text-slate-200 bangla">{mp.profiles?.full_name}</span>
-                    <span className="text-[12px] text-slate-400 bangla font-medium">প্ল্যান: {mp.plan?.name}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {isOverdue && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-lg font-bold bangla bg-rose-500 text-white shadow-sm shadow-rose-500/20 flex items-center gap-1">
-                        <Clock size={10} strokeWidth={3} />
-                        বকেয়া
+                <div className="flex justify-between items-start mb-4 relative z-20">
+                  <div>
+                    <h3 className="text-[18px] font-black text-slate-800 dark:text-slate-100 bangla group-hover:text-primary transition-colors">{plan.name}</h3>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <p className="text-[11px] text-slate-400 dark:text-slate-500 font-bold bangla flex items-center gap-1.5">
+                        <Calendar size={12} className="text-primary" />
+                        {frequencyText}
+                      </p>
+                      <span className={`text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-tighter ${
+                        plan.status === 'active' ? 'bg-emerald-50 text-emerald-500' : 
+                        plan.status === 'paused' ? 'bg-amber-50 text-amber-500' : 'bg-blue-50 text-blue-500'
+                      }`}>
+                        {plan.status === 'active' ? 'সক্রিয়' : plan.status === 'paused' ? 'লুকানো' : 'সম্পন্ন'}
                       </span>
-                    )}
-                    <div className={`px-3 py-1 rounded-full text-[10px] font-bold bangla uppercase tracking-wider ${
-                      mp.status === 'active' ? 'bg-emerald-50 text-emerald-500' : 'bg-slate-100 text-slate-400'
-                    }`}>
-                      {mp.status === 'active' ? 'সক্রিয়' : 'বন্ধ'}
                     </div>
                   </div>
+                  <div className="w-10 h-10 rounded-2xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-300">
+                    <ChevronRight size={22} className="group-hover:translate-x-1 transition-transform" />
+                  </div>
                 </div>
 
-                <div className="w-full h-1.5 bg-slate-50 dark:bg-slate-800 rounded-full overflow-hidden relative z-10">
-                  <div 
-                    className={`h-full rounded-full ${isOverdue ? 'bg-rose-500' : 'bg-primary'}`}
-                    style={{ width: `${Math.min(100, (mp.total_collected / (mp.plan?.target_amount || 1)) * 100)}%` }}
-                  />
+                <div className="grid grid-cols-3 gap-2 mb-4">
+                   <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-2xl text-center">
+                     <span className="block text-[10px] text-slate-400 uppercase font-black mb-0.5">মাসিক কিস্তি</span>
+                     <span className="text-[14px] font-bold text-slate-700 dark:text-slate-200 bangla">৳{plan.installment_amount.toLocaleString()}</span>
+                   </div>
+                   <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-2xl text-center">
+                     <span className="block text-[10px] text-slate-400 uppercase font-black mb-0.5">সক্রিয় সদস্য</span>
+                     <span className="text-[14px] font-bold text-primary bangla">{activeInPlan} জন</span>
+                   </div>
+                   <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-2xl text-center">
+                     <span className="block text-[10px] text-slate-400 uppercase font-black mb-0.5">বকেয়া</span>
+                     <span className={`text-[14px] font-bold bangla ${overdueInPlan > 0 ? 'text-rose-500' : 'text-slate-400'}`}>{overdueInPlan} জন</span>
+                   </div>
                 </div>
 
-                <div className="flex justify-between items-center text-[11px] bangla text-slate-400 font-medium relative z-10">
-                  <div className="flex flex-col gap-0.5">
-                    <span>সংগৃহীত</span>
-                    <span className={`text-[14px] font-black ${isOverdue ? 'text-rose-600 dark:text-rose-400' : 'text-slate-700 dark:text-slate-300'}`}>৳{mp.total_collected.toLocaleString()}</span>
+                {/* Progress Bar */}
+                <div className="mb-6 space-y-2">
+                  <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-400 tracking-wider">
+                    <span>সংগ্রহ অগ্রগতি</span>
+                    <span className="text-primary">{Math.round(progress)}%</span>
                   </div>
-                  <div className="flex flex-col gap-0.5 text-right">
-                    <span>পরবর্তী কিস্তি</span>
-                    <span className={`text-[13px] font-bold ${isOverdue ? 'text-rose-500 animate-pulse' : 'text-orange-500'}`}>
-                      {(() => {
-                        const [y, m, d] = mp.next_due_date.split('-').map(Number);
-                        const date = new Date(y, m - 1, d);
-                        const dayName = ['রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহস্পতি', 'শুক্র', 'শনি'][date.getDay()];
-                        return `${date.toLocaleDateString('bn-BD', { day: 'numeric', month: 'short' })} (${dayName})`;
-                      })()}
-                    </span>
+                  <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${progress}%` }}
+                      transition={{ duration: 1, ease: "easeOut" }}
+                      className={`h-full bg-gradient-to-r from-primary to-indigo-500 rounded-full`} 
+                    />
                   </div>
+                </div>
+                
+                <div className="flex justify-between items-center border-t border-slate-50 dark:border-slate-800/50 pt-4 relative z-30">
+                  <div className="flex items-center gap-2 text-[12px] text-slate-400 font-bold bangla bg-slate-50 dark:bg-slate-800/80 px-3 py-1 rounded-full">
+                    <Clock size={12} />
+                    <span>সময়কাল: {plan.duration_months} মাস</span>
+                  </div>
+                  <button 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      navigate(`/somobay/manage/${plan.id}`);
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-xl text-[12px] font-bold bangla transition-all"
+                  >
+                    <PiggyBank size={14} />
+                    <span>কিস্তি জমা দিন</span>
+                  </button>
                 </div>
               </motion.div>
             );
@@ -452,6 +325,37 @@ export default function ManageSomobay() {
                     value={newPlan.name}
                     onChange={(e) => setNewPlan({...newPlan, name: e.target.value})}
                   />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[12px] font-bold text-slate-400 bangla ml-1">প্ল্যান শুরুর তারিখ</label>
+                  <input 
+                    type="date"
+                    className="w-full p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border-none outline-none bangla text-[15px]"
+                    value={newPlan.created_at}
+                    onChange={(e) => setNewPlan({...newPlan, created_at: e.target.value})}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[12px] font-bold text-slate-400 bangla ml-1">প্ল্যান স্ট্যাটাস</label>
+                  <div className="flex gap-2">
+                    {[
+                      { id: 'active', label: 'Active', sub: 'সক্রিয়' },
+                      { id: 'paused', label: 'Pause', sub: 'লুকানো' },
+                      { id: 'completed', label: 'Done', sub: 'সম্পন্ন' }
+                    ].map((s) => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => setNewPlan({...newPlan, status: s.id as any})}
+                        className={`flex-1 py-3 rounded-xl text-[12px] font-bold bangla transition-all flex flex-col items-center justify-center gap-0.5 ${newPlan.status === s.id ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-slate-50 dark:bg-slate-800 text-slate-400'}`}
+                      >
+                        <span>{s.label}</span>
+                        <span className="text-[9px] opacity-80">{s.sub}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -563,99 +467,6 @@ export default function ManageSomobay() {
                 >
                   {isEditing ? 'আপডেট করুন' : 'প্ল্যান তৈরি করুন'}
                 </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Enroll Member Modal */}
-      <AnimatePresence>
-        {showEnroll && selectedPlan && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowEnroll(false)} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="w-full max-w-[360px] bg-white dark:bg-slate-900 rounded-[32px] p-6 relative z-10 shadow-2xl">
-              <div className="w-14 h-14 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-4">
-                <Users size={28} />
-              </div>
-              <h3 className="text-[18px] font-bold text-slate-800 dark:text-slate-100 bangla mb-2">সদস্য যোগ করুন</h3>
-              <p className="text-[13px] text-slate-400 bangla mb-6">"{selectedPlan.name}" প্ল্যান এ সদস্য নির্বাচন করুন।</p>
-              
-              <div className="max-h-[300px] overflow-y-auto mb-6 custom-scrollbar">
-                {members.map((m) => (
-                  <button 
-                    key={m.id}
-                    onClick={() => setSelectedProfile(m)}
-                    className={`w-full p-4 mb-2 rounded-2xl flex items-center gap-3 transition-colors ${selectedProfile?.id === m.id ? 'bg-primary/10 border border-primary/20' : 'bg-slate-50 dark:bg-slate-800 border border-transparent'}`}
-                  >
-                    <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-700 flex items-center justify-center font-bold text-primary">
-                      {m.full_name[0]}
-                    </div>
-                    <div className="text-left">
-                      <p className="text-[14px] font-bold text-slate-800 dark:text-slate-100 bangla">{m.full_name}</p>
-                      <p className="text-[11px] text-slate-400">{m.phone}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-
-              <button 
-                disabled={!selectedProfile}
-                onClick={handleEnroll}
-                className="w-full py-4 bg-primary text-white rounded-2xl font-bold bangla disabled:opacity-50"
-              >নিশ্চিত করুন</button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Record Payment Modal */}
-      <AnimatePresence>
-        {showPayment && selectedMemberPlan && (
-          <div className="fixed inset-0 z-[100] flex items-end justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowPayment(false)} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
-            <motion.div initial={{ y: 500 }} animate={{ y: 0 }} exit={{ y: 500 }} className="w-full max-w-[400px] bg-white dark:bg-slate-900 rounded-t-[40px] p-8 relative z-10">
-              <div className="items-center mb-6 flex gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-500 flex items-center justify-center">
-                  <PiggyBank size={24} />
-                </div>
-                <div>
-                   <h3 className="text-[18px] font-bold text-slate-800 dark:text-slate-100 bangla">কিস্তি জমা দিন</h3>
-                   <p className="text-[12px] text-slate-400 bangla">সদস্য: {selectedMemberPlan.profiles?.full_name}</p>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[11px] font-bold text-slate-400 bangla ml-1 uppercase">কিস্তির পরিমাণ</label>
-                    <input 
-                      type="number" 
-                      className="w-full p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border-none outline-none font-bold text-slate-700 dark:text-slate-200"
-                      value={paymentData.amount}
-                      onChange={(e) => setPaymentData({...paymentData, amount: parseFloat(e.target.value)})}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[11px] font-bold text-slate-400 bangla ml-1 uppercase">জরিমানা (যদি থাকে)</label>
-                    <input 
-                      type="number" 
-                      className="w-full p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border-none outline-none font-bold text-rose-500"
-                      value={paymentData.penalty}
-                      onChange={(e) => setPaymentData({...paymentData, penalty: parseFloat(e.target.value)})}
-                    />
-                  </div>
-                </div>
-                <input 
-                  placeholder="নোট বা মন্তব্য..." 
-                  className="w-full p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border-none outline-none bangla text-[15px]"
-                  value={paymentData.note}
-                  onChange={(e) => setPaymentData({...paymentData, note: e.target.value})}
-                />
-                <button 
-                  onClick={handlePayment}
-                  className="w-full py-5 bg-emerald-500 text-white rounded-2xl font-bold bangla shadow-xl shadow-emerald-500/20 active:scale-95 transition-transform mt-4"
-                >জমা নিশ্চিত করুন</button>
               </div>
             </motion.div>
           </div>

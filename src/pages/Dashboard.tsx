@@ -172,7 +172,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-2 gap-[12px] mt-4">
           {[
             { id: 'total-members', label: "মোট সদস্য", value: adminStats.totalMembers, color: "text-primary", icon: <Users />, bg: "bg-primary/10" },
-            { id: 'total-collections', label: "মোট কালেকশন", value: `৳${adminStats.totalCollections.toLocaleString()}`, color: "text-emerald-600", icon: <HandCoins />, bg: "bg-emerald-50" },
+            { id: 'total-collections', label: "মোট কালেকশন", value: `৳${adminStats.totalCollections.toLocaleString()}`, color: "text-emerald-600 dark:text-emerald-400", icon: <HandCoins />, bg: "bg-emerald-50 dark:bg-emerald-500/10" },
             { 
               id: 'merged-plans', 
               label: "প্ল্যান ও এনরোলমেন্ট", 
@@ -188,9 +188,9 @@ export default function Dashboard() {
                   </div>
                 </div>
               ),
-              color: "text-blue-500", 
+              color: "text-blue-500 dark:text-blue-400", 
               icon: <Activity />, 
-              bg: "bg-blue-50" 
+              bg: "bg-blue-50 dark:bg-blue-500/10" 
             },
             { 
               id: 'merged-overdue', 
@@ -207,11 +207,11 @@ export default function Dashboard() {
                   </div>
                 </div>
               ),
-              color: "text-rose-500", 
+              color: "text-rose-500 dark:text-rose-400", 
               icon: <Clock />, 
-              bg: "bg-rose-50" 
+              bg: "bg-rose-50 dark:bg-rose-500/10" 
             },
-            settings?.is_wallet_enabled !== false && { id: 'total-savings', label: "মোট সঞ্চয়", value: `৳${totalSavings.toLocaleString()}`, color: "text-slate-600", icon: <HandCoins />, bg: "bg-slate-100" },
+            settings?.is_wallet_enabled !== false && { id: 'total-savings', label: "মোট সঞ্চয়", value: `৳${totalSavings.toLocaleString()}`, color: "text-slate-600 dark:text-slate-400", icon: <HandCoins />, bg: "bg-slate-100 dark:bg-white/5" },
           ].filter(Boolean).map((stat: any, i) => (
             <motion.div
               key={stat.id}

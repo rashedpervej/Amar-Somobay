@@ -14,6 +14,8 @@ export interface SomobayPlan {
   profit_percentage: number;
   late_fee_amount: number;
   is_active: boolean;
+  status: 'active' | 'paused' | 'completed';
+  created_at?: string;
 }
 
 export interface MemberPlan {
@@ -70,6 +72,9 @@ interface SomobayState {
     note: string;
   }) => Promise<void>;
   sendReminders: () => Promise<{ sent: number; alreadyNotified: number }>;
+  transferMember: (memberPlanId: string, currentMemberId: string, newMemberId: string, adminId: string) => Promise<void>;
+  releaseMember: (memberPlanId: string, adminId: string) => Promise<void>;
+  updateMemberPlanStatus: (memberPlanId: string, status: MemberPlan['status'], adminId: string) => Promise<void>;
 }
 
 export const useSomobayStore = create<SomobayState>((set, get) => ({
@@ -90,7 +95,7 @@ export const useSomobayStore = create<SomobayState>((set, get) => ({
     const { data, error } = await supabase
       .from('somobay_plans')
       .select('*')
-      .eq('is_active', true);
+      .order('created_at', { ascending: false });
     
     if (!error) set({ plans: data || [] });
     set({ loading: false });
@@ -295,5 +300,56 @@ export const useSomobayStore = create<SomobayState>((set, get) => ({
     }
 
     return { sent, alreadyNotified };
+  },
+
+  transferMember: async (memberPlanId, currentMemberId, newMemberId, adminId) => {
+    // 1. Update the member_plan record to have the new member
+    const { error: updateError } = await supabase
+      .from('member_plans')
+      .update({ member_id: newMemberId })
+      .eq('id', memberPlanId);
+
+    if (updateError) throw updateError;
+
+    // 2. Log this in member_actions or similar for audit trail
+    await supabase.from('member_actions').insert([{
+      member_id: newMemberId,
+      action_type: 'plan_transfer',
+      amount: 0,
+      note: `Tranferred from member ID ${currentMemberId}. Original member enrollment ID: ${memberPlanId}`,
+      admin_id: adminId,
+      status: 'approved'
+    }]);
+
+    // 3. Notify the new member
+    await supabase.from('notifications').insert([{
+      user_id: newMemberId,
+      title: 'নতুন প্ল্যান হস্তান্তর',
+      message: 'একটি চালু থাকা সমবায় প্ল্যান আপনার নামে হস্তান্তর করা হয়েছে।',
+      type: 'info',
+      source_module: 'plan'
+    }]);
+
+    get().fetchMemberPlans();
+  },
+
+  releaseMember: async (memberPlanId, adminId) => {
+    const { error } = await supabase
+      .from('member_plans')
+      .update({ status: 'cancelled' })
+      .eq('id', memberPlanId);
+
+    if (error) throw error;
+    get().fetchMemberPlans();
+  },
+
+  updateMemberPlanStatus: async (memberPlanId, status, adminId) => {
+    const { error } = await supabase
+      .from('member_plans')
+      .update({ status })
+      .eq('id', memberPlanId);
+
+    if (error) throw error;
+    get().fetchMemberPlans();
   }
 }));

@@ -21,6 +21,7 @@ import BulkDeposit from './pages/BulkDeposit';
 import Notifications from './pages/Notifications';
 import SavingsHistory from './pages/SavingsHistory';
 import ManageSomobay from './pages/ManageSomobay';
+import PlanManagement from './pages/PlanManagement';
 import MySomobay from './pages/MySomobay';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import ScrollToTop from './components/ScrollToTop';
@@ -57,6 +58,7 @@ export default function App() {
             <Route path="/savings/deposit" element={<SingleDeposit />} />
             <Route path="/savings/bulk" element={<BulkDeposit />} />
             <Route path="/somobay/manage" element={<ManageSomobay />} />
+            <Route path="/somobay/manage/:id" element={<PlanManagement />} />
             <Route path="/somobay/my" element={<MySomobay />} />
             <Route path="/notifications" element={<Notifications />} />
           </Route>

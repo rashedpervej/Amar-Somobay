@@ -13,6 +13,10 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'somobay_plans' AND column_name = 'due_date') THEN
         ALTER TABLE public.somobay_plans ADD COLUMN due_date integer;
     END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'somobay_plans' AND column_name = 'status') THEN
+        ALTER TABLE public.somobay_plans ADD COLUMN status text DEFAULT 'active';
+    END IF;
 END $$;
 
 -- 2. Fix member_wallets foreign key to point to public.profiles(id)
