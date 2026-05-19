@@ -354,14 +354,40 @@ export default function Dashboard() {
             
             {/* Progress Circular visual segment */}
             <div 
-              className="relative w-[80px] h-[80px] border-4 border-emerald-400 rounded-full flex flex-col items-center justify-center transition-transform duration-150"
+              className="relative w-[80px] h-[80px] flex flex-col items-center justify-center transition-transform duration-150"
               style={{
                 transform: `translate(12px, 8px) scale(1.3)`,
                 transformOrigin: 'center'
               }}
             >
-              <span className="text-[20px] font-bold">{overallProgress}%</span>
-              <span className="text-[8px] opacity-80 bangla">গড় অগ্রগতি</span>
+              {/* SVG Ring representing dynamic progress */}
+              <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 80 80">
+                {/* Background circle track */}
+                <circle 
+                  cx="40" 
+                  cy="40" 
+                  r="34" 
+                  className="stroke-white/10" 
+                  strokeWidth="6" 
+                  fill="transparent" 
+                />
+                {/* Animated foreground progress circle */}
+                <circle 
+                  cx="40" 
+                  cy="40" 
+                  r="34" 
+                  className="stroke-emerald-400 transition-all duration-500 ease-out" 
+                  strokeWidth="6" 
+                  fill="transparent"
+                  strokeDasharray="213.6"
+                  strokeDashoffset={213.6 - (213.6 * (overallProgress || 0)) / 100}
+                  strokeLinecap="round"
+                />
+              </svg>
+              <div className="relative z-10 flex flex-col items-center justify-center">
+                <span className="text-[20px] font-bold">{overallProgress}%</span>
+                <span className="text-[8px] opacity-80 bangla">গড় অগ্রগতি</span>
+              </div>
             </div>
 
             {/* Stats text details sidebar segment */}
