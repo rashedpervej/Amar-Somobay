@@ -91,11 +91,13 @@ export default function Dashboard() {
   );
 
   const activePlansCount = memberPlans.filter(p => p.status === 'active').length;
-  const overallProgress = memberPlans.length > 0 
-    ? Math.round((memberPlans.reduce((acc, curr) => {
+  const activeUserPlans = memberPlans.filter(mp => mp.plan);
+  const overallProgress = activeUserPlans.length > 0
+    ? Math.max(0, Math.min(100, Math.round((activeUserPlans.reduce((acc, curr) => {
         const target = curr.plan?.target_amount || 1;
-        return acc + (curr.total_collected / target);
-      }, 0) / memberPlans.length) * 100)
+        const ratio = (curr.total_collected || 0) / target;
+        return acc + Math.min(1, Math.max(0, ratio));
+      }, 0) / activeUserPlans.length) * 100)))
     : 0;
   
   const earliestNextDue = memberPlans
@@ -320,23 +322,22 @@ export default function Dashboard() {
         animate={{ opacity: 1, y: 0 }}
         whileHover={{ scale: 1.01 }}
         whileTap={{ scale: 0.98 }}
-        className="w-full mt-6 relative cursor-pointer group rounded-[24px] overflow-hidden"
-        style={{ backgroundColor: "#02362F" }}
+        className="w-full mt-6 relative cursor-pointer group rounded-[24px] overflow-hidden text-white shadow-2xl border border-white/5"
+        style={{ 
+          height: "201px", 
+          backgroundColor: "#02362F",
+          backgroundImage: "url('https://jkxmcbzipmcmyiwfqupx.supabase.co/storage/v1/object/public/branding/cad%20bg.webp')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center'
+        }}
         onClick={() => navigate('/somobay/my')}
       >
-        <div 
-          style={{ 
-            height: "201px", 
-            backgroundColor: "#02362F",
-            backgroundImage: "url('https://jkxmcbzipmcmyiwfqupx.supabase.co/storage/v1/object/public/branding/cad%20bg.webp')" 
-          }}
-          className="relative w-full overflow-hidden p-[16px] pb-[12px] bg-cover bg-center text-white shadow-2xl border border-white/5 flex flex-col justify-between"
-        >
+        <div className="relative w-full h-full p-[16px] pb-[12px] flex flex-col justify-between z-10">
           {/* Header element */}
           <div 
             className="relative flex justify-between items-center z-10 transition-transform duration-150"
             style={{
-              transform: `translate(0px, 0px) scale(1)`,
+              transform: "translate(0px, 0px) scale(1)",
               transformOrigin: 'left center'
             }}
           >
@@ -344,7 +345,7 @@ export default function Dashboard() {
               <h3 className="font-bold text-[14.5px] bangla">সমবায় সারসংক্ষেপ</h3>
               <div className="w-[44px] h-[2.5px] bg-emerald-400 mt-1 rounded" />
             </div>
-            <button className="flex items-center gap-1 bg-white/10 border border-white/20 rounded-full px-2.5 py-1 text-[10px] bangla font-bold">
+            <button className="flex items-center gap-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-full px-2.5 py-1 text-[10px] bangla font-bold">
               <span>বিস্তারিত দেখুন</span> <ChevronRight size={10} />
             </button>
           </div>
@@ -356,7 +357,7 @@ export default function Dashboard() {
             <div 
               className="relative w-[80px] h-[80px] flex flex-col items-center justify-center transition-transform duration-150"
               style={{
-                transform: `translate(12px, 8px) scale(1.3)`,
+                transform: "translate(0px, 0px) scale(1)",
                 transformOrigin: 'center'
               }}
             >
@@ -368,7 +369,7 @@ export default function Dashboard() {
                   cy="40" 
                   r="34" 
                   className="stroke-white/10" 
-                  strokeWidth="6" 
+                  strokeWidth="5.5" 
                   fill="transparent" 
                 />
                 {/* Animated foreground progress circle */}
@@ -377,24 +378,25 @@ export default function Dashboard() {
                   cy="40" 
                   r="34" 
                   className="stroke-emerald-400 transition-all duration-500 ease-out" 
-                  strokeWidth="6" 
+                  strokeWidth="5.5" 
                   fill="transparent"
                   strokeDasharray="213.6"
                   strokeDashoffset={213.6 - (213.6 * (overallProgress || 0)) / 100}
                   strokeLinecap="round"
+                  style={{ filter: "drop-shadow(0 0 4px rgba(52, 211, 153, 0.5))" }}
                 />
               </svg>
               <div className="relative z-10 flex flex-col items-center justify-center">
-                <span className="text-[20px] font-bold">{overallProgress}%</span>
-                <span className="text-[8px] opacity-80 bangla">গড় অগ্রগতি</span>
+                <span className="text-[20px] font-bold leading-none">{overallProgress}%</span>
+                <span className="text-[8px] opacity-80 bangla mt-0.5">গড় অগ্রগতি</span>
               </div>
             </div>
 
             {/* Stats text details sidebar segment */}
             <div 
-              className="flex flex-col gap-2 text-[12px] pl-2 border-l border-white/10 bangla transition-transform duration-150"
+              className="flex flex-col gap-2.5 text-[12px] pl-2.5 border-l border-white/10 bangla transition-transform duration-150 ml-1"
               style={{
-                transform: `translate(30px, 7px) scale(1.1)`,
+                transform: "translate(0px, 0px) scale(1)",
                 transformOrigin: 'left center'
               }}
             >
