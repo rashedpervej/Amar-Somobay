@@ -351,11 +351,11 @@ export default function Dashboard() {
           </div>
 
           {/* Main progress stats grid wrapper */}
-          <div className="relative grid grid-cols-[100px_1fr] gap-3 items-center z-10 mb-2">
+          <div className="relative grid grid-cols-[150px_1fr] gap-3 items-center z-10 mb-2">
             
             {/* Progress Circular visual segment */}
             <div 
-              className="relative w-[80px] h-[80px] flex flex-col items-center justify-center transition-transform duration-150"
+              className="relative w-[130px] h-[130px] flex flex-col items-center justify-center transition-transform duration-150"
               style={{
                 transform: "translate(0px, 0px) scale(1)",
                 transformOrigin: 'center'
@@ -387,24 +387,24 @@ export default function Dashboard() {
                 />
               </svg>
               <div className="relative z-10 flex flex-col items-center justify-center">
-                <span className="text-[20px] font-bold leading-none">{overallProgress}%</span>
-                <span className="text-[8px] opacity-80 bangla mt-0.5">গড় অগ্রগতি</span>
+                <span className="text-[24px] font-bold leading-none">{overallProgress}%</span>
+                <span className="text-[12px] opacity-80 bangla mt-0.5">গড় অগ্রগতি</span>
               </div>
             </div>
 
             {/* Stats text details sidebar segment */}
             <div 
-              className="flex flex-col gap-2.5 text-[12px] pl-2.5 border-l border-white/10 bangla transition-transform duration-150 ml-1"
+              className="flex flex-col gap-3.5 text-[16px] pl-2.5 border-l border-white/10 bangla transition-transform duration-150 ml-1"
               style={{
                 transform: "translate(0px, 0px) scale(1)",
                 transformOrigin: 'left center'
               }}
             >
               <div className="flex items-center gap-2">
-                <Calendar size={12} className="text-emerald-400" />
+                <Calendar size={16} className="text-emerald-400" />
                 <div>
-                  <p className="text-[8px] opacity-60">পরবর্তী কিস্তি</p>
-                  <p className="font-semibold leading-tight text-[11px]">
+                  <p className="text-[12px] opacity-60">পরবর্তী কিস্তি</p>
+                  <p className="font-semibold leading-tight text-[14px]">
                     {earliestNextDue 
                       ? new Date(earliestNextDue).toLocaleDateString('bn-BD', { day: 'numeric', month: 'long', year: 'numeric' }) 
                       : 'কিস্তি নেই'}
@@ -412,10 +412,10 @@ export default function Dashboard() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <AlertCircle size={12} className="text-amber-400" />
+                <AlertCircle size={16} className="text-amber-400" />
                 <div>
-                  <p className="text-[8px] opacity-60">বকেয়া কিস্তি</p>
-                  <p className="font-semibold leading-tight text-[11px]">
+                  <p className="text-[12px] opacity-60">বকেয়া কিস্তি</p>
+                  <p className="font-semibold leading-tight text-[14px]">
                     {overdueMemberPlans.length > 0 ? `${overdueMemberPlans.length.toLocaleString('bn-BD')} টি` : 'বকেয়া নেই'}
                   </p>
                 </div>
