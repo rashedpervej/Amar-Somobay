@@ -395,9 +395,34 @@ export default function Dashboard() {
                   filter="url(#progress-ring-glow)"
                 />
               </svg>
-              <div className="relative z-10 flex flex-col items-center justify-center">
-                <span className="text-[24px] font-bold leading-none">{overallProgress}%</span>
-                <span className="text-[12px] opacity-80 bangla mt-0.5">গড় অগ্রগতি</span>
+
+              {/* Centered Liquid container fitting inside the ring track */}
+              <div className="absolute w-[82px] h-[82px] rounded-full overflow-hidden bg-emerald-950/40 flex flex-col items-center justify-center z-10 border border-white/5 shadow-inner">
+                {/* Waves container rising dynamically up to progress height */}
+                <div 
+                  className="absolute left-0 right-0 bottom-0 bg-emerald-600/25 transition-all duration-1000 ease-out z-0"
+                  style={{ height: `${overallProgress}%` }}
+                >
+                  {/* First Wave item (slow spin) */}
+                  <div 
+                    className="absolute w-[160px] h-[160px] rounded-[38%] bg-emerald-400/30 left-[-39px] bottom-[85%] animate-[spin_10s_linear_infinite]"
+                    style={{ transformOrigin: 'center' }}
+                  />
+                  {/* Second Wave item (faster counter spin) */}
+                  <div 
+                    className="absolute w-[160px] h-[160px] rounded-[40%] bg-emerald-300/20 left-[-39px] bottom-[90%] animate-[spin_6s_linear_infinite]"
+                    style={{ transformOrigin: 'center' }}
+                  />
+                </div>
+
+                {/* Glassy reflection sheen */}
+                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-white/10 z-10 pointer-events-none" />
+
+                {/* Text centered inside the water wave */}
+                <div className="relative z-20 flex flex-col items-center justify-center text-white drop-shadow-md">
+                  <span className="text-[24px] font-bold leading-none">{overallProgress}%</span>
+                  <span className="text-[12px] opacity-85 bangla mt-0.5 whitespace-nowrap">গড় অগ্রগতি</span>
+                </div>
               </div>
             </div>
 
