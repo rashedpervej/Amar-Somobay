@@ -351,7 +351,7 @@ export default function Dashboard() {
           </div>
 
           {/* Main progress stats grid wrapper */}
-          <div className="relative grid grid-cols-[150px_1fr] gap-3 items-center z-10 mb-2">
+          <div className="relative grid grid-cols-[140px_1fr] gap-3 items-center z-10 mb-1 mt-2">
             
             {/* Progress Circular visual segment */}
             <div 
@@ -362,7 +362,16 @@ export default function Dashboard() {
               }}
             >
               {/* SVG Ring representing dynamic progress */}
-              <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 80 80">
+              <svg className="absolute inset-0 w-full h-full -rotate-[225deg]" viewBox="-10 -10 100 100">
+                <defs>
+                  <filter id="progress-ring-glow" x="-30%" y="-30%" width="160%" height="160%">
+                    <feGaussianBlur stdDeviation="3.5" result="blur" />
+                    <feMerge>
+                      <feMergeNode in="blur" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+                </defs>
                 {/* Background circle track */}
                 <circle 
                   cx="40" 
@@ -383,7 +392,7 @@ export default function Dashboard() {
                   strokeDasharray="213.6"
                   strokeDashoffset={213.6 - (213.6 * (overallProgress || 0)) / 100}
                   strokeLinecap="round"
-                  style={{ filter: "drop-shadow(0 0 4px rgba(52, 211, 153, 0.5))" }}
+                  filter="url(#progress-ring-glow)"
                 />
               </svg>
               <div className="relative z-10 flex flex-col items-center justify-center">
@@ -397,11 +406,12 @@ export default function Dashboard() {
               className="flex flex-col gap-3.5 text-[16px] pl-2.5 border-l border-white/10 bangla transition-transform duration-150 ml-1"
               style={{
                 transform: "translate(0px, 0px) scale(1)",
-                transformOrigin: 'left center'
+                transformOrigin: 'left center',
+                marginLeft: '0px'
               }}
             >
               <div className="flex items-center gap-2">
-                <Calendar size={16} className="text-emerald-400" />
+                <Calendar size={20} className="text-emerald-400" />
                 <div>
                   <p className="text-[12px] opacity-60">পরবর্তী কিস্তি</p>
                   <p className="font-semibold leading-tight text-[14px]">
@@ -412,7 +422,7 @@ export default function Dashboard() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <AlertCircle size={16} className="text-amber-400" />
+                <AlertCircle size={20} className="text-amber-400" />
                 <div>
                   <p className="text-[12px] opacity-60">বকেয়া কিস্তি</p>
                   <p className="font-semibold leading-tight text-[14px]">
