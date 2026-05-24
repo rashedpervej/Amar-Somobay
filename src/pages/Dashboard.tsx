@@ -440,7 +440,9 @@ export default function Dashboard() {
               }}
             >
               <div className="flex items-center gap-2">
-                <Calendar size={18} className="text-emerald-400" />
+                <div className="w-7 h-7 rounded-lg bg-emerald-500/15 flex items-center justify-center text-emerald-400 shrink-0">
+                  <Calendar size={15} />
+                </div>
                 <div>
                   <p className="text-[11px] sm:text-[12px] opacity-70">পরবর্তী কিস্তি</p>
                   <p className="font-bold leading-tight text-[13px] sm:text-[14.5px]">
@@ -451,7 +453,9 @@ export default function Dashboard() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <AlertCircle size={18} className="text-amber-400" />
+                <div className="w-7 h-7 rounded-lg bg-amber-500/15 flex items-center justify-center text-amber-400 shrink-0">
+                  <AlertCircle size={15} />
+                </div>
                 <div>
                   <p className="text-[11px] sm:text-[12px] opacity-70">বকেয়া কিস্তি</p>
                   <p className="font-bold leading-tight text-[13px] sm:text-[14.5px]">

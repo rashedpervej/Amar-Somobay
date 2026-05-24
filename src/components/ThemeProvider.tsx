@@ -1,9 +1,10 @@
-import React, { createContext, useContext, ReactNode, useMemo, useEffect } from 'react';
+import React, { createContext, useContext, ReactNode, useMemo, useEffect, useState } from 'react';
 import { useSettingsStore } from '../store/useSettingsStore';
-import { useThemeStore } from '../store/useThemeStore';
+import { useThemeStore, ThemeMode } from '../store/useThemeStore';
 
 interface Theme {
   mode: 'light' | 'dark';
+  themeMode: ThemeMode;
   primary: string;
   secondary: string;
   bgSoft: string;
@@ -11,6 +12,7 @@ interface Theme {
   textPrimary: string;
   textSecondary: string;
   toggleMode: () => void;
+  setThemeMode: (mode: ThemeMode) => void;
 }
 
 const LIGHT_THEME = {
@@ -29,27 +31,60 @@ const DARK_THEME = {
 
 const ThemeContext = createContext<Theme>({
   mode: 'light',
+  themeMode: 'system',
   primary: '#10b981',
   secondary: '#059669',
   bgSoft: LIGHT_THEME.bgSoft,
   card: LIGHT_THEME.card,
   textPrimary: LIGHT_THEME.textPrimary,
   textSecondary: LIGHT_THEME.textSecondary,
-  toggleMode: () => {}
+  toggleMode: () => {},
+  setThemeMode: () => {}
 });
 
 export const useTheme = () => useContext(ThemeContext);
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const settings = useSettingsStore(state => state.settings);
-  const { mode, toggleTheme } = useThemeStore();
+  const { themeMode, setThemeMode } = useThemeStore();
+  const [resolvedMode, setResolvedMode] = useState<'light' | 'dark'>('light');
+
+  useEffect(() => {
+    const getSystemTheme = () => 
+      window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+
+    // Set initial mode
+    setResolvedMode(themeMode === 'system' ? getSystemTheme() : themeMode);
+
+    // Setup listener for system theme changes
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleSystemThemeChange = () => {
+      if (themeMode === 'system') {
+        setResolvedMode(mediaQuery.matches ? 'dark' : 'light');
+      }
+    };
+
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', handleSystemThemeChange);
+    } else {
+      mediaQuery.addListener(handleSystemThemeChange);
+    }
+
+    return () => {
+      if (mediaQuery.removeEventListener) {
+        mediaQuery.removeEventListener('change', handleSystemThemeChange);
+      } else {
+        mediaQuery.removeListener(handleSystemThemeChange);
+      }
+    };
+  }, [themeMode]);
 
   useEffect(() => {
     const root = window.document.documentElement;
     root.classList.remove('light', 'dark');
-    root.classList.add(mode);
-    root.style.colorScheme = mode;
-  }, [mode]);
+    root.classList.add(resolvedMode);
+    root.style.colorScheme = resolvedMode;
+  }, [resolvedMode]);
 
   const theme = useMemo(() => {
     // Helper to validate hex colors
@@ -58,7 +93,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     const primary = settings && isValidHex(settings.primary_color) ? settings.primary_color : '#10b981';
     const secondary = settings && isValidHex(settings.secondary_color) ? settings.secondary_color : '#059669';
     
-    const colors = mode === 'light' ? LIGHT_THEME : DARK_THEME;
+    const colors = resolvedMode === 'light' ? LIGHT_THEME : DARK_THEME;
 
     // Update CSS variables for Tailwind
     if (typeof window !== 'undefined') {
@@ -72,13 +107,18 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     }
 
     return {
-      mode,
+      mode: resolvedMode,
+      themeMode,
       primary,
       secondary,
       ...colors,
-      toggleMode: toggleTheme
+      toggleMode: () => {
+        const nextMode = themeMode === 'system' ? 'light' : themeMode === 'light' ? 'dark' : 'system';
+        setThemeMode(nextMode);
+      },
+      setThemeMode
     };
-  }, [settings, mode, toggleTheme]);
+  }, [settings, resolvedMode, themeMode, setThemeMode]);
 
   return (
     <ThemeContext.Provider value={theme}>

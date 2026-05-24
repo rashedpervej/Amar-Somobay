@@ -3,7 +3,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useTheme } from '../components/ThemeProvider';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, User, Shield, Info, ChevronRight, Bell, Settings as SettingsIcon, Sun, Moon } from 'lucide-react';
+import { LogOut, User, Shield, Info, ChevronRight, Bell, Settings as SettingsIcon, Sun, Moon, Laptop } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export default function Settings() {
@@ -66,13 +66,57 @@ export default function Settings() {
             <button 
               onClick={() => theme.toggleMode()}
               className="bg-white/80 dark:bg-[#1e293b]/60 p-2.5 rounded-2xl shadow-sm border border-slate-200 dark:border-white/5 text-slate-500 dark:text-slate-300 active:scale-95 transition-all backdrop-blur-md"
+              title="থিম পরিবর্তন"
             >
-              {theme.mode === 'light' ? <Moon size={22} className="text-slate-600" /> : <Sun size={22} className="text-yellow-400 outline-none" />}
+              {theme.themeMode === 'system' ? (
+                <Laptop size={22} style={{ color: theme.primary }} />
+              ) : theme.themeMode === 'light' ? (
+                <Sun size={22} className="text-amber-500" />
+              ) : (
+                <Moon size={22} className="text-indigo-400" />
+              )}
             </button>
           </div>
         </div>
 
-        <div className="flex flex-col gap-[14px] mt-2">
+        {/* Theme Selector Module */}
+        <div className="flex flex-col gap-[14px] mt-4">
+          <h2 className="text-[12px] font-bold text-slate-400 dark:text-slate-500 bangla px-3 lg:px-4 uppercase tracking-[0.15em]">অ্যাপ থিম</h2>
+          <div className="dark-card rounded-[24px] p-4 flex flex-col gap-3">
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { id: 'system', label: 'সিস্টেম', icon: <Laptop size={18} /> },
+                { id: 'light', label: 'লাইট', icon: <Sun size={18} /> },
+                { id: 'dark', label: 'ডার্ক', icon: <Moon size={18} /> },
+              ].map((option) => {
+                const isActive = theme.themeMode === option.id;
+                return (
+                  <button
+                    key={option.id}
+                    onClick={() => theme.setThemeMode(option.id as any)}
+                    style={isActive ? { 
+                      backgroundColor: `${theme.primary}15`, 
+                      borderColor: `${theme.primary}33`, 
+                      color: theme.primary 
+                    } : undefined}
+                    className={`flex flex-col items-center justify-center gap-2 py-3 px-2 rounded-2xl border text-center transition-all active:scale-[0.97] ${
+                      isActive
+                        ? 'font-bold'
+                        : 'bg-slate-50/50 dark:bg-white/5 border-slate-100 dark:border-white/5 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/10'
+                    }`}
+                  >
+                    <div style={isActive ? { color: theme.primary } : undefined} className={isActive ? '' : 'text-slate-400 dark:text-slate-500'}>
+                      {option.icon}
+                    </div>
+                    <span className="text-[13px] bangla">{option.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-[14px]">
           <h2 className="text-[12px] font-bold text-slate-400 dark:text-slate-500 bangla px-3 lg:px-4 uppercase tracking-[0.15em]">সাধারণ</h2>
           <div className="dark-card rounded-[28px] overflow-hidden">
             {menuItems.map((item: any, index) => (
