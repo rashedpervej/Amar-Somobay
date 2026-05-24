@@ -44,6 +44,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const theme = useTheme();
   const [loading, setLoading] = useState(true);
+  const [imgErr, setImgErr] = useState(false);
   
   const isAdmin = profile?.role === 'admin';
 
@@ -517,6 +518,148 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* Custom Savings Goal Banner Card (Bangla Target Card) */}
+      <motion.div 
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        onClick={() => navigate('/somobay/my')}
+        className="mt-0 bg-[#110d29] rounded-[20px] p-2 flex items-center border border-white/5 relative overflow-hidden shadow-2xl active:scale-[0.98] transition-all cursor-pointer group"
+      >
+        {/* Soft decorative background circles from original reference UI to match image exactly */}
+        <div className="absolute top-1/2 left-[-10px] -translate-y-1/2 w-28 h-28 rounded-full bg-indigo-500/10 blur-xl pointer-events-none" />
+        <div className="absolute top-1/2 right-[-20px] -translate-y-1/2 w-24 h-24 rounded-full bg-purple-500/10 blur-xl pointer-events-none" />
+
+        {/* Layout container */}
+        <div className="flex items-center w-full gap-3 relative z-10 justify-between">
+          
+          {/* Target Illustration Section with high-fidelity vector SVG fallback */}
+          <div className="shrink-0 transition-transform duration-300 group-hover:scale-[1.05] flex items-center justify-center">
+            {!imgErr ? (
+              <img 
+                src="https://cdn3d.iconscout.com/3d/premium/thumb/finance-target-3d-icon-png-download-13750580.png" 
+                alt="Savings Target" 
+                className="w-[78px] h-[78px] sm:w-[92px] sm:h-[92px] object-contain" 
+                onError={() => {
+                  console.log("Saving target image failed to load, invoking vector fallback.");
+                  setImgErr(true);
+                }}
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              /* Highly detailed Vector Fallback: Concentric Target, Stack of Coins, Leaves, and Arrow */
+              <div className="w-[78px] h-[78px] sm:w-[92px] sm:h-[92px]">
+                <svg viewBox="0 0 160 160" className="w-full h-full">
+                  <defs>
+                    <radialGradient id="target-glow" cx="50%" cy="50%" r="50%">
+                      <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.4" />
+                      <stop offset="100%" stopColor="#4f46e5" stopOpacity="0" />
+                    </radialGradient>
+                    <filter id="vector-shadow" x="-10%" y="-10%" width="120%" height="120%">
+                      <feDropShadow dx="1" dy="3" stdDeviation="2.5" floodOpacity="0.5" />
+                    </filter>
+                  </defs>
+                  
+                  <circle cx="80" cy="80" r="60" fill="url(#target-glow)" />
+                  
+                  {/* Sprout Green leaves background */}
+                  <path d="M40 70 C30 55, 35 35, 52 42 C50 55, 45 65, 40 70 Z" fill="#22c55e" filter="url(#vector-shadow)" opacity="0.95" />
+                  <path d="M40 70 C43 55, 48 48, 52 42" stroke="#15803d" strokeWidth="1" strokeLinecap="round" />
+                  <path d="M35 85 C22 75, 20 58, 36 62 C38 72, 38 78, 35 85 Z" fill="#4ade80" filter="url(#vector-shadow)" opacity="0.9" />
+                  <path d="M125 110 C132 100, 130 90, 122 88 C120 95, 122 105, 125 110 Z" fill="#16a34a" filter="url(#vector-shadow)" opacity="0.9" />
+
+                  {/* Target ring */}
+                  <g transform="rotate(-15 80 80)">
+                    {/* Blue Rim */}
+                    <circle cx="80" cy="80" r="42" fill="#2563eb" stroke="#1e3a8a" strokeWidth="1.5" filter="url(#vector-shadow)" />
+                    {/* White Ring */}
+                    <circle cx="80" cy="80" r="32" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1" />
+                    {/* Blue Center Outer */}
+                    <circle cx="80" cy="80" r="22" fill="#3b82f6" stroke="#1d4ed8" strokeWidth="1" />
+                    {/* Inner White */}
+                    <circle cx="80" cy="80" r="13" fill="#ffffff" stroke="#e2e8f0" strokeWidth="0.5" />
+                    {/* Blue Center absolute bullseye */}
+                    <circle cx="80" cy="80" r="6" fill="#1d4ed8" />
+                  </g>
+
+                  {/* Gold coins stack at bottom left */}
+                  <g filter="url(#vector-shadow)">
+                    {/* Back stack of coin cylinders */}
+                    <ellipse cx="50" cy="115" rx="14" ry="4.5" fill="#ca8a04" />
+                    <path d="M36 115 v-4 a 14 4.5 0 0 0 28 0 v 4 Z" fill="#eab308" />
+                    <ellipse cx="50" cy="111" rx="14" ry="4.5" fill="#fde047" stroke="#ca8a04" strokeWidth="0.5" />
+                    
+                    <ellipse cx="50" cy="107" rx="14" ry="4.5" fill="#ca8a04" />
+                    <path d="M36 107 v-4 a 14 4.5 0 0 0 28 0 v 4 Z" fill="#eab308" />
+                    <ellipse cx="50" cy="103" rx="14" ry="4.5" fill="#fef08a" stroke="#ca8a04" strokeWidth="0.5" />
+                  </g>
+
+                  {/* Front stack of coin cylinders */}
+                  <g filter="url(#vector-shadow)">
+                    <ellipse cx="72" cy="122" rx="14" ry="4.5" fill="#ca8a04" />
+                    <path d="M58 122 v-4 a 14 4.5 0 0 0 28 0 v 4 Z" fill="#eab308" />
+                    <ellipse cx="72" cy="118" rx="14" ry="4.5" fill="#fde047" stroke="#ca8a04" strokeWidth="0.5" />
+
+                    <ellipse cx="72" cy="114" rx="14" ry="4.5" fill="#ca8a04" />
+                    <path d="M58 114 v-4 a 14 4.5 0 0 0 28 0 v 4 Z" fill="#eab308" />
+                    <ellipse cx="72" cy="110" rx="14" ry="4.5" fill="#fde047" stroke="#ca8a04" strokeWidth="0.5" />
+                    
+                    <ellipse cx="72" cy="106" rx="14" ry="4.5" fill="#ca8a04" />
+                    <path d="M58 106 v-4 a 14 4.5 0 0 0 28 0 v 4 Z" fill="#eab308" />
+                    <ellipse cx="72" cy="102" rx="14" ry="4.5" fill="#fef08a" stroke="#ca8a04" strokeWidth="0.5" />
+                  </g>
+
+                  {/* Red/Brown Arrow hitting Center */}
+                  <g filter="url(#vector-shadow)">
+                    <line x1="135" y1="30" x2="84" y2="76" stroke="#b45309" strokeWidth="3" strokeLinecap="round" />
+                    <path d="M123 35 L132 27 L138 31 L131 42 Z" fill="#3b82f6" />
+                    <path d="M117 40 L126 32 L132 36 L125 47 Z" fill="#1d4ed8" />
+                    <polygon points="85,73 80,80 88,80" fill="#475569" />
+                  </g>
+
+                  {/* Fine Sparkles */}
+                  <g transform="translate(115, 60)">
+                    <path d="M8 0 L10 6 L16 8 L10 10 L8 16 L6 10 L0 8 L6 6 Z" fill="#fef08a" />
+                  </g>
+                  <g transform="translate(25, 30)">
+                    <path d="M4 0 L5 3 L8 4 L5 5 L4 8 L3 5 L0 4 L3 3 Z" fill="#fef08a" opacity="0.8" />
+                  </g>
+                </svg>
+              </div>
+            )}
+          </div>
+
+          {/* Texts Details area with proper responsive margins */}
+          <div className="flex-1 flex flex-col min-w-0 ml-2.5">
+            <h4 className="text-[14px] xs:text-[15px] sm:text-[17px] font-bold text-white bangla flex items-center gap-1 leading-tight truncate">
+              ছোট সঞ্চয়, বড় স্বপ্ন <span className="text-amber-400">✨</span>
+            </h4>
+            <div className="text-[11px] xs:text-[11.5px] sm:text-[13px] text-slate-300/80 bangla leading-relaxed mt-1 whitespace-nowrap">
+              <p>নিয়মিত সঞ্চয় করুন,</p>
+              <p>ভবিষ্যৎ হবে সুরক্ষিত।</p>
+            </div>
+          </div>
+
+          {/* Vertical divider line */}
+          <span className="h-10 w-[1px] bg-white/10 shrink-0 mx-2 hidden min-[360px]:block" />
+
+          {/* Goal tracker section */}
+          <div className="flex flex-col justify-center shrink-0 min-w-[90px] xs:min-w-[105px] sm:min-w-[130px] hidden min-[325px]:flex">
+             <span className="text-[11px] xs:text-[12px] sm:text-[13px] text-slate-300 bangla">লক্ষ্য: ৳১২,০০০</span>
+             <div className="flex items-center gap-1.5 mt-1.5 w-full">
+               <div className="flex-grow h-[6px] sm:h-2 bg-white/10 rounded-full overflow-hidden w-[35px] xs:w-[45px] sm:w-[50px] md:w-[65px]">
+                 <div className="h-full bg-gradient-to-r from-emerald-500 to-green-400 rounded-full" style={{ width: '80%' }} />
+               </div>
+               <span className="text-[10px] xs:text-[11px] text-slate-400 font-medium bangla whitespace-nowrap">৮০% সম্পূর্ণ</span>
+             </div>
+          </div>
+
+          {/* Interactive purple chevron button */}
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/5 border border-white/5 flex items-center justify-center shrink-0 text-slate-300 group-hover:bg-white/10 group-hover:text-white transition-all ml-1.5">
+            <ChevronRight size={16} />
+          </div>
+        </div>
+      </motion.div>
 
       {/* Recent Transactions for Members */}
       <div className="mt-1 flex flex-col gap-4">
