@@ -432,7 +432,7 @@ export default function Dashboard() {
 
             {/* Stats text details sidebar segment */}
             <div 
-              className="flex flex-col gap-5 text-[14px] pl-3 border-l-2 h-[100px] border-white/10 bangla transition-transform duration-150 ml-3"
+              className="flex flex-col justify-between text-[14px] pl-3 border-l-2 h-[90px] border-white/10 bangla transition-transform duration-150 ml-3"
               style={{
                 transform: "translate(0px, 0px) scale(1.1)",
                 transformOrigin: 'left center',
