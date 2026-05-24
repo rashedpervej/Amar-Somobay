@@ -342,22 +342,22 @@ export default function Dashboard() {
             }}
           >
             <div>
-              <h3 className="font-bold text-[14.5px] bangla">সমবায় সারসংক্ষেপ</h3>
+              <h3 className="font-bold text-[14.5px] sm:text-[15.5px] bangla tracking-wide">সমবায় সারসংক্ষেপ</h3>
               <div className="w-[44px] h-[2.5px] bg-emerald-400 mt-1 rounded" />
             </div>
-            <button className="flex items-center gap-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-full px-2.5 py-1 text-[10px] bangla font-bold">
+            <button className="flex items-center gap-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-full px-2.5 py-1 text-[10px] sm:text-[11px] bangla font-bold transition-all">
               <span>বিস্তারিত দেখুন</span> <ChevronRight size={10} />
             </button>
           </div>
 
           {/* Main progress stats grid wrapper */}
-          <div className="relative grid grid-cols-[140px_1fr] gap-3 items-center z-10 mb-1 mt-2">
+          <div className="relative grid grid-cols-[114px_1fr] gap-4 items-center z-10 mb-1 mt-2">
             
             {/* Progress Circular visual segment */}
             <div 
-              className="relative w-[130px] h-[130px] flex flex-col items-center justify-center transition-transform duration-150"
+              className="relative w-[114px] h-[114px] flex flex-col items-center justify-center transition-transform duration-150"
               style={{
-                transform: "translate(0px, 0px) scale(1)",
+                transform: "translate(0px, 0px) scale(1.3)",
                 transformOrigin: 'center'
               }}
             >
@@ -397,38 +397,42 @@ export default function Dashboard() {
               </svg>
 
               {/* Centered Liquid container fitting inside the ring track */}
-              <div className="absolute w-[82px] h-[82px] rounded-full overflow-hidden bg-emerald-950/40 flex flex-col items-center justify-center z-10 border border-white/5 shadow-inner">
-                {/* Waves container rising dynamically up to progress height */}
+              <div className="absolute inset-[21px] rounded-full overflow-hidden bg-emerald-950/40 flex flex-col items-center justify-center z-10 border border-white/5 shadow-inner">
+                {/* 1. Neon Liquid Background (shining through behind masks with 35% opacity) */}
+                <div className="absolute inset-0 bg-gradient-to-t from-emerald-600 via-emerald-400 to-[#00ffbb] z-0 opacity-35" />
+
+                {/* 2. Overlaid Rotating Masks (color matches the card background #02362F) */}
+                {/* These masks dynamically cover the neon background from the computed level upwards */}
                 <div 
-                  className="absolute left-0 right-0 bottom-0 bg-emerald-600/25 transition-all duration-1000 ease-out z-0"
-                  style={{ height: `${overallProgress}%` }}
+                  className="absolute left-[-35px] w-[142px] h-[142px] transition-all duration-1000 ease-out z-10"
+                  style={{ bottom: `${overallProgress}%` }}
                 >
-                  {/* First Wave item (slow spin) */}
+                  {/* First Mask (slow spin) */}
                   <div 
-                    className="absolute w-[160px] h-[160px] rounded-[38%] bg-emerald-400/30 left-[-39px] bottom-[85%] animate-[spin_10s_linear_infinite]"
+                    className="absolute inset-0 rounded-[38%] bg-[#02362F]/80 animate-[spin_10s_linear_infinite]"
                     style={{ transformOrigin: 'center' }}
                   />
-                  {/* Second Wave item (faster counter spin) */}
+                  {/* Second Mask (faster counter spin, higher roundedness for layered crest wave) */}
                   <div 
-                    className="absolute w-[160px] h-[160px] rounded-[40%] bg-emerald-300/20 left-[-39px] bottom-[90%] animate-[spin_6s_linear_infinite]"
+                    className="absolute inset-0 rounded-[41%] bg-gradient-to-b from-[#022c22] to-[#011611] animate-[spin_6s_linear_infinite]"
                     style={{ transformOrigin: 'center' }}
                   />
                 </div>
 
                 {/* Glassy reflection sheen */}
-                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-white/10 z-10 pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/20 z-20 pointer-events-none" />
 
                 {/* Text centered inside the water wave */}
-                <div className="relative z-20 flex flex-col items-center justify-center text-white drop-shadow-md">
-                  <span className="text-[24px] font-bold leading-none">{overallProgress}%</span>
-                  <span className="text-[12px] opacity-85 bangla mt-0.5 whitespace-nowrap">গড় অগ্রগতি</span>
+                <div className="relative z-30 flex flex-col items-center justify-center text-white drop-shadow-md">
+                  <span className="text-[20px] sm:text-[22px] font-extrabold leading-none">{overallProgress}%</span>
+                  <span className="text-[9.5px] sm:text-[10px] opacity-90 bangla mt-0.5 whitespace-nowrap">গড় অগ্রগতি</span>
                 </div>
-              </div>
+               </div>
             </div>
 
             {/* Stats text details sidebar segment */}
             <div 
-              className="flex flex-col gap-3.5 text-[16px] pl-2.5 border-l border-white/10 bangla transition-transform duration-150 ml-1"
+              className="flex flex-col gap-2.5 text-[14px] pl-3 border-l border-white/10 bangla transition-transform duration-150 ml-1"
               style={{
                 transform: "translate(0px, 0px) scale(1)",
                 transformOrigin: 'left center',
@@ -436,10 +440,10 @@ export default function Dashboard() {
               }}
             >
               <div className="flex items-center gap-2">
-                <Calendar size={20} className="text-emerald-400" />
+                <Calendar size={18} className="text-emerald-400" />
                 <div>
-                  <p className="text-[12px] opacity-60">পরবর্তী কিস্তি</p>
-                  <p className="font-semibold leading-tight text-[14px]">
+                  <p className="text-[11px] sm:text-[12px] opacity-70">পরবর্তী কিস্তি</p>
+                  <p className="font-bold leading-tight text-[13px] sm:text-[14.5px]">
                     {earliestNextDue 
                       ? new Date(earliestNextDue).toLocaleDateString('bn-BD', { day: 'numeric', month: 'long', year: 'numeric' }) 
                       : 'কিস্তি নেই'}
@@ -447,16 +451,15 @@ export default function Dashboard() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <AlertCircle size={20} className="text-amber-400" />
+                <AlertCircle size={18} className="text-amber-400" />
                 <div>
-                  <p className="text-[12px] opacity-60">বকেয়া কিস্তি</p>
-                  <p className="font-semibold leading-tight text-[14px]">
+                  <p className="text-[11px] sm:text-[12px] opacity-70">বকেয়া কিস্তি</p>
+                  <p className="font-bold leading-tight text-[13px] sm:text-[14.5px]">
                     {overdueMemberPlans.length > 0 ? `${overdueMemberPlans.length.toLocaleString('bn-BD')} টি` : 'বকেয়া নেই'}
                   </p>
                 </div>
               </div>
             </div>
-
           </div>
         </div>
       </motion.div>
