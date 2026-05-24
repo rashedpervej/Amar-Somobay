@@ -301,7 +301,7 @@ export default function Dashboard() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           onClick={() => navigate('/somobay/my')}
-          className="mt-6 bg-rose-50 dark:bg-rose-500/10 rounded-[28px] p-5 flex items-center gap-4 border border-rose-100 dark:border-rose-500/20 cursor-pointer active:scale-[0.98] transition-transform"
+          className="mt-0 bg-rose-50 dark:bg-rose-500/10 rounded-[20px] p-3 flex items-center gap-4 border border-rose-100 dark:border-rose-500/20 cursor-pointer active:scale-[0.98] transition-transform"
         >
           <div className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-800 flex items-center justify-center text-rose-500 shadow-sm shrink-0">
             <AlertCircle size={24} />
@@ -322,7 +322,7 @@ export default function Dashboard() {
         animate={{ opacity: 1, y: 0 }}
         whileHover={{ scale: 1.01 }}
         whileTap={{ scale: 0.98 }}
-        className="w-full mt-6 relative cursor-pointer group rounded-[24px] overflow-hidden text-white shadow-2xl border border-white/5"
+        className="w-full mt-0 relative cursor-pointer group rounded-[24px] overflow-hidden text-white shadow-2xl border border-white/5"
         style={{ 
           height: "201px", 
           backgroundColor: "#02362F",
@@ -491,7 +491,7 @@ export default function Dashboard() {
 
       {/* Quick Actions Grid for Members */}
       {settings?.is_member_quick_actions_enabled !== false && (
-        <div className="mt-8 flex flex-col gap-4">
+        <div className="mt-2 flex flex-col gap-4">
           <h2 className="text-[18px] font-bold text-slate-800 dark:text-slate-200 bangla px-1">দ্রুত কার্যক্রম</h2>
           <div className="grid grid-cols-4 gap-3">
             {[
@@ -519,7 +519,7 @@ export default function Dashboard() {
       )}
 
       {/* Recent Transactions for Members */}
-      <div className="mt-8 flex flex-col gap-4">
+      <div className="mt-1 flex flex-col gap-4">
         <div className="flex justify-between items-center px-1">
           <h2 className="text-[18px] font-bold text-slate-800 dark:text-slate-200 bangla">সাম্প্রতিক লেনদেন</h2>
           <button onClick={() => navigate('/savings')} className="text-primary text-[14px] font-bold bangla">সব দেখুন</button>
