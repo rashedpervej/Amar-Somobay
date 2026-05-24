@@ -316,7 +316,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
             // Notify Member about the plan payment
             await supabase.from('notifications').insert([{
               user_id: mid,
-              title: 'কিস্তি জমা হয়েছে (বাল্ক)',
+              title: 'কিস্তি পরিশোধ (বাল্ক)',
               message: `আপনার "${(mps[0] as any).plan?.name}" প্ল্যানে ${data.amount.toLocaleString()} টাকা কিস্তি জমা দেওয়া হয়েছে। তারিখ: ${new Date().toLocaleDateString('bn-BD')}`,
               type: 'success',
               source_module: 'plan'

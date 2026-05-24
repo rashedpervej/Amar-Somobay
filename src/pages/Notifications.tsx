@@ -82,55 +82,103 @@ export default function Notifications() {
       <div className="flex flex-col gap-[14px] pb-24">
         <AnimatePresence mode="popLayout">
           {filteredNotifications.length > 0 ? (
-            filteredNotifications.map((notification, index) => (
-              <motion.div
-                key={notification.id}
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.04, duration: 0.4, ease: "easeOut" }}
-                onClick={() => !notification.is_read && markAsRead(notification.id)}
-                className={`dark-card rounded-[26px] p-5 shadow-sm transition-all relative border border-transparent ${
-                  notification.is_read ? 'opacity-50' : 'shadow-md active:scale-[0.99] cursor-pointer'
-                }`}
-                style={!notification.is_read ? { borderColor: `${theme.primary}20` } : {}}
-              >
-                {!notification.is_read && (
-                  <div 
-                    className="absolute top-6 right-6 w-2.5 h-2.5 rounded-full shadow-[0_0_10px_rgba(0,0,0,0.1)]" 
-                    style={{ backgroundColor: theme.primary }}
-                  />
-                )}
-                
-                <div className="flex gap-4">
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
-                    notification.type === 'success' ? 'bg-emerald-50 text-emerald-500 dark:bg-emerald-500/10 dark:text-emerald-400' :
-                    notification.type === 'warning' ? 'bg-amber-50 text-amber-500 dark:bg-amber-500/10 dark:text-amber-400' :
-                    notification.type === 'error' ? 'bg-rose-50 text-rose-500 dark:bg-rose-500/10 dark:text-rose-400' :
-                    'bg-primary/5 text-primary'
-                  }`}
-                  style={notification.type === 'info' ? { backgroundColor: `${theme.primary}1A`, color: theme.primary } : {}}
-                  >
-                    {notification.type === 'success' ? <CheckCircle2 size={24} strokeWidth={2.5} /> :
-                     notification.type === 'warning' ? <AlertCircle size={24} strokeWidth={2.5} /> :
-                     notification.type === 'error' ? <AlertCircle size={24} strokeWidth={2.5} /> :
-                     <Bell size={24} strokeWidth={2.5} />}
-                  </div>
+            filteredNotifications.map((notification, index) => {
+              // Map titles, colors and icons to match the design style
+              let displayTitle = notification.title;
+              let iconBg = 'bg-primary/5 text-primary';
+              let iconStyle: React.CSSProperties | undefined = { backgroundColor: `${theme.primary}1A`, color: theme.primary };
+              let icon = <Bell size={24} strokeWidth={2.5} />;
 
-                  <div className="flex flex-col gap-1 min-w-0 flex-1">
-                    <h3 className="text-[15px] font-bold text-slate-800 dark:text-slate-100 bangla leading-tight">
-                      {notification.title}
-                    </h3>
-                    <p className="text-[13px] text-slate-500 dark:text-slate-400 bangla leading-relaxed">
-                      {notification.message}
-                    </p>
-                    <div className="flex items-center gap-1.5 mt-1.5 text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">
-                      <Clock size={12} strokeWidth={2.5} />
-                      {new Date(notification.created_at).toLocaleDateString('bn-BD')}
+              if (displayTitle === 'কিস্তি জমা সফল' || displayTitle === 'কিস্তি পরিশোধ সফল') {
+                displayTitle = 'কিস্তি পরিশোধ';
+              } else if (displayTitle === 'কিস্তি জমা হয়েছে (বাল্ক)' || displayTitle === 'বাল্ক কিস্তি জমা সফল হয়েছে') {
+                displayTitle = 'কিস্তি পরিশোধ (বাল্ক)';
+              } else if (displayTitle === 'জরিমানা যুক্ত করা হয়েছে' || displayTitle === 'জরিমানা যুক্ত করা হয়েছে') {
+                displayTitle = 'জরিমানা যুক্ত';
+              } else if (displayTitle === 'জরিমানা মওকুফ করা হয়েছে' || displayTitle === 'জরিমানা মওকুফ করা হয়েছে') {
+                displayTitle = 'জরিমানা মওকুফ';
+              } else if (displayTitle === 'আর্থিক সমন্বয় রেকর্ডকৃত' || displayTitle === 'আর্থিক সমন্বয় সফল') {
+                displayTitle = 'সমন্বয়';
+              } else if (displayTitle === 'ফেরত বা রিফান্ড সম্পন্ন' || displayTitle === 'রিফান্ড সম্পন্ন') {
+                displayTitle = 'টাকা রিফান্ড';
+              }
+
+              if (displayTitle === 'কিস্তি পরিশোধ' || displayTitle === 'কিস্তি পরিশোধ (বাল্ক)') {
+                iconBg = 'bg-emerald-50 text-emerald-500 dark:bg-emerald-500/10 dark:text-emerald-400';
+                iconStyle = undefined;
+                icon = <CheckCircle2 size={24} strokeWidth={2.5} />;
+              } else if (displayTitle === 'জরিমানা যুক্ত') {
+                iconBg = 'bg-amber-50 text-amber-500 dark:bg-amber-500/10 dark:text-amber-400';
+                iconStyle = undefined;
+                icon = <AlertCircle size={24} strokeWidth={2.5} />;
+              } else if (displayTitle === 'জরিমানা মওকুফ') {
+                iconBg = 'bg-indigo-50 text-indigo-500 dark:bg-indigo-500/10 dark:text-indigo-400';
+                iconStyle = undefined;
+                icon = <CheckCircle2 size={24} strokeWidth={2.5} />;
+              } else if (displayTitle === 'সমন্বয়') {
+                iconBg = 'bg-blue-50 text-blue-500 dark:bg-blue-500/10 dark:text-blue-400';
+                iconStyle = undefined;
+                icon = <CheckCircle2 size={24} strokeWidth={2.5} />;
+              } else if (displayTitle === 'টাকা রিফান্ড') {
+                iconBg = 'bg-rose-50 text-rose-500 dark:bg-rose-500/10 dark:text-rose-400';
+                iconStyle = undefined;
+                icon = <AlertCircle size={24} strokeWidth={2.5} />;
+              } else {
+                if (notification.type === 'success') {
+                  iconBg = 'bg-emerald-50 text-emerald-500 dark:bg-emerald-500/10 dark:text-emerald-400';
+                  iconStyle = undefined;
+                  icon = <CheckCircle2 size={24} strokeWidth={2.5} />;
+                } else if (notification.type === 'warning') {
+                  iconBg = 'bg-amber-50 text-amber-500 dark:bg-amber-500/10 dark:text-amber-400';
+                  iconStyle = undefined;
+                  icon = <AlertCircle size={24} strokeWidth={2.5} />;
+                } else if (notification.type === 'error') {
+                  iconBg = 'bg-rose-50 text-rose-500 dark:bg-rose-500/10 dark:text-rose-400';
+                  iconStyle = undefined;
+                  icon = <AlertCircle size={24} strokeWidth={2.5} />;
+                }
+              }
+
+              return (
+                <motion.div
+                  key={notification.id}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.04, duration: 0.4, ease: "easeOut" }}
+                  onClick={() => !notification.is_read && markAsRead(notification.id)}
+                  className={`dark-card rounded-[26px] p-5 shadow-sm transition-all relative border border-transparent ${
+                    notification.is_read ? 'opacity-50' : 'shadow-md active:scale-[0.99] cursor-pointer'
+                  }`}
+                  style={!notification.is_read ? { borderColor: `${theme.primary}20` } : {}}
+                >
+                  {!notification.is_read && (
+                    <div 
+                      className="absolute top-6 right-6 w-2.5 h-2.5 rounded-full shadow-[0_0_10px_rgba(0,0,0,0.1)]" 
+                      style={{ backgroundColor: theme.primary }}
+                    />
+                  )}
+                  
+                  <div className="flex gap-4">
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${iconBg}`} style={iconStyle}>
+                      {icon}
+                    </div>
+
+                    <div className="flex flex-col gap-1 min-w-0 flex-1">
+                      <h3 className="text-[15px] font-bold text-slate-800 dark:text-slate-100 bangla leading-tight">
+                        {displayTitle}
+                      </h3>
+                      <p className="text-[13px] text-slate-500 dark:text-slate-400 bangla leading-relaxed">
+                        {notification.message}
+                      </p>
+                      <div className="flex items-center gap-1.5 mt-1.5 text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">
+                        <Clock size={12} strokeWidth={2.5} />
+                        {new Date(notification.created_at).toLocaleDateString('bn-BD')}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </motion.div>
-            ))
+                </motion.div>
+              );
+            })
           ) : !loading ? (
             <div className="py-24 flex flex-col items-center justify-center gap-6">
               <div className="w-24 h-24 rounded-[36px] bg-slate-50 dark:bg-white/5 flex items-center justify-center relative">

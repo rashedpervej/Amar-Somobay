@@ -351,26 +351,26 @@ export const useSomobayStore = create<SomobayState>((set, get) => ({
     
     // Record Notification based on dynamic type
     const { data: mpData } = await supabase.from('member_plans').select('member_id, plan:somobay_plans(name)').eq('id', data.memberPlanId).single();
-    if (mpData) {
-      let title = 'কিস্তি জমা সফল';
+     if (mpData) {
+      let title = 'কিস্তি পরিশোধ';
       let message = `আপনার "${(mpData as any).plan?.name}" প্ল্যানে ${data.amount.toLocaleString()} টাকা কিস্তি জমা দেওয়া হয়েছে। তারিখ: ${new Date().toLocaleDateString('bn-BD')}`;
       let nType: 'success' | 'warning' | 'info' | 'error' = 'success';
 
       const type = data.type || 'payment';
       if (type === 'fine') {
-        title = 'জরিমানা যুক্ত করা হয়েছে';
+        title = 'জরিমানা যুক্ত';
         message = `আপনার "${(mpData as any).plan?.name}" প্ল্যানে ${data.amount.toLocaleString()} টাকা জরিমানা যুক্ত করা হয়েছে। নোট: ${data.note || 'নেই'}`;
         nType = 'warning';
       } else if (type === 'waiver') {
-        title = 'জরিমানা মওকুফ করা হয়েছে';
+        title = 'জরিমানা মওকুফ';
         message = `আপনার "${(mpData as any).plan?.name}" প্ল্যানে ${data.amount.toLocaleString()} টাকা জরিমানা মওকুফ করা হয়েছে। নোট: ${data.note || 'নেই'}`;
         nType = 'success';
       } else if (type === 'adjustment') {
-        title = 'আর্থিক সমন্বয় রেকর্ডকৃত';
+        title = 'সমন্বয়';
         message = `আপনার "${(mpData as any).plan?.name}" প্ল্যানে ${data.amount.toLocaleString()} টাকা সমন্বয় করা হয়েছে। নোট: ${data.note || 'নেই'}`;
         nType = 'info';
       } else if (type === 'refund') {
-        title = 'ফেরত বা রিফান্ড সম্পন্ন';
+        title = 'টাকা রিফান্ড';
         message = `আপনার "${(mpData as any).plan?.name}" প্ল্যান থেকে ${data.amount.toLocaleString()} টাকা ফেরত/রিফান্ড করা হয়েছে। নোট: ${data.note || 'নেই'}`;
         nType = 'error';
       }
