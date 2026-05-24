@@ -351,13 +351,13 @@ export default function Dashboard() {
           </div>
 
           {/* Main progress stats grid wrapper */}
-          <div className="relative grid grid-cols-[114px_1fr] gap-4 items-center z-10 mb-1 mt-2">
+          <div className="relative grid grid-cols-[114px_1fr] gap-4 items-center z-10 mb-1 mt-1">
             
             {/* Progress Circular visual segment */}
             <div 
               className="relative w-[114px] h-[114px] flex flex-col items-center justify-center transition-transform duration-150"
               style={{
-                transform: "translate(0px, 0px) scale(1.3)",
+                transform: "translate(0px, 0px) scale(1.4)",
                 transformOrigin: 'center'
               }}
             >
@@ -414,7 +414,7 @@ export default function Dashboard() {
                   />
                   {/* Second Mask (faster counter spin, higher roundedness for layered crest wave) */}
                   <div 
-                    className="absolute inset-0 rounded-[41%] bg-gradient-to-b from-[#022c22] to-[#011611] animate-[spin_6s_linear_infinite]"
+                    className="absolute inset-0 rounded-[41%] bg-[#02362F] animate-[spin_6s_linear_infinite]"
                     style={{ transformOrigin: 'center' }}
                   />
                 </div>
@@ -432,11 +432,11 @@ export default function Dashboard() {
 
             {/* Stats text details sidebar segment */}
             <div 
-              className="flex flex-col gap-2.5 text-[14px] pl-3 border-l border-white/10 bangla transition-transform duration-150 ml-1"
+              className="flex flex-col gap-5 text-[14px] pl-3 border-l-2 h-[100px] border-white/10 bangla transition-transform duration-150 ml-3"
               style={{
-                transform: "translate(0px, 0px) scale(1)",
+                transform: "translate(0px, 0px) scale(1.1)",
                 transformOrigin: 'left center',
-                marginLeft: '0px'
+                marginLeft: '6px'
               }}
             >
               <div className="flex items-center gap-2">
