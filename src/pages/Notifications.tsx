@@ -103,7 +103,7 @@ export default function Notifications() {
                 displayTitle = 'টাকা রিফান্ড';
               }
 
-              if (displayTitle === 'কিস্তি পরিশোধ' || displayTitle === 'কিস্তি পরিশোধ (বাল্ক)') {
+              if (displayTitle === 'কিস্তি পরিশোধ' || displayTitle === 'কিস্তি পরিশোধ (বাল্ক)' || displayTitle === 'জরিমানা আদায়') {
                 iconBg = 'bg-emerald-50 text-emerald-500 dark:bg-emerald-500/10 dark:text-emerald-400';
                 iconStyle = undefined;
                 icon = <CheckCircle2 size={24} strokeWidth={2.5} />;

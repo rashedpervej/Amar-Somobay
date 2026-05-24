@@ -352,12 +352,12 @@ export const useSomobayStore = create<SomobayState>((set, get) => ({
     // Record Notification based on dynamic type
     const { data: mpData } = await supabase.from('member_plans').select('member_id, plan:somobay_plans(name)').eq('id', data.memberPlanId).single();
      if (mpData) {
-      let title = 'কিস্তি পরিশোধ';
-      let message = `আপনার "${(mpData as any).plan?.name}" প্ল্যানে ${data.amount.toLocaleString()} টাকা কিস্তি জমা দেওয়া হয়েছে। তারিখ: ${new Date().toLocaleDateString('bn-BD')}`;
+      let title = '';
+      let message = '';
       let nType: 'success' | 'warning' | 'info' | 'error' = 'success';
 
       const type = data.type || 'payment';
-      if (type === 'fine') {
+      if (type === 'fine' || type === 'fine_payment') {
         title = 'জরিমানা যুক্ত';
         message = `আপনার "${(mpData as any).plan?.name}" প্ল্যানে ${data.amount.toLocaleString()} টাকা জরিমানা যুক্ত করা হয়েছে। নোট: ${data.note || 'নেই'}`;
         nType = 'warning';
@@ -373,6 +373,19 @@ export const useSomobayStore = create<SomobayState>((set, get) => ({
         title = 'টাকা রিফান্ড';
         message = `আপনার "${(mpData as any).plan?.name}" প্ল্যান থেকে ${data.amount.toLocaleString()} টাকা ফেরত/রিফান্ড করা হয়েছে। নোট: ${data.note || 'নেই'}`;
         nType = 'error';
+      } else if (data.amount === 0 && data.penalty > 0) {
+        title = 'জরিমানা আদায়';
+        message = `আপনার "${(mpData as any).plan?.name}" প্ল্যানে ${data.penalty.toLocaleString()} টাকা জরিমানা পরিশোধ করা হয়েছে। নোট: ${data.note || 'নেই'}`;
+        nType = 'success';
+      } else {
+        // Fallback for standard installment payment
+        title = 'কিস্তি পরিশোধ';
+        let detailText = `কিস্তি জমা দেওয়া হয়েছে`;
+        if (data.penalty > 0) {
+          detailText += ` (বিলম্ব ফি ৳${data.penalty.toLocaleString()} সহ)`;
+        }
+        message = `আপনার "${(mpData as any).plan?.name}" প্ল্যানে ${data.amount.toLocaleString()} টাকা ${detailText}। তারিখ: ${new Date().toLocaleDateString('bn-BD')}`;
+        nType = 'success';
       }
 
       await supabase.from('notifications').insert([{
