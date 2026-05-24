@@ -153,7 +153,7 @@ export default function ManageSomobay() {
 
   return (
     <MobileLayout>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-1">
         <h1 className="text-[22px] font-bold text-slate-800 dark:text-slate-100 bangla">সমবায় ব্যবস্থাপনা</h1>
         <button 
           onClick={() => setShowAddPlan(true)}
@@ -168,7 +168,7 @@ export default function ManageSomobay() {
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-rose-50 dark:bg-rose-500/10 rounded-[32px] p-6 mb-8 border border-rose-100 dark:border-rose-500/20 flex items-center justify-between"
+          className="bg-rose-50 dark:bg-rose-500/10 rounded-[20px] p-4 mb-1 border border-rose-100 dark:border-rose-500/20 flex items-center justify-between"
         >
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-800 shadow-sm flex items-center justify-center text-rose-500">
