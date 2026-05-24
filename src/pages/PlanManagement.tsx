@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MobileLayout } from '../components/layout/MobileLayout';
 import { useAuthStore } from '../store/useAuthStore';
-import { useSomobayStore, SomobayPlan, MemberPlan } from '../store/useSomobayStore';
+import { useSomobayStore, SomobayPlan, MemberPlan, calculateMemberPlanBalances } from '../store/useSomobayStore';
 import { useTheme } from '../components/ThemeProvider';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -24,7 +24,9 @@ import {
   AlertCircle,
   PiggyBank,
   MoreVertical,
-  FileText
+  FileText,
+  Sliders,
+  ShieldAlert
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -67,6 +69,16 @@ export default function PlanManagement() {
   const [selectedMemberForPayment, setSelectedMemberForPayment] = useState<MemberPlan | null>(null);
   const [allProfiles, setAllProfiles] = useState<any[]>([]);
   const [newStatus, setNewStatus] = useState<MemberPlan['status']>('active');
+
+  // Adjustment Modal States
+  const [showAdjustment, setShowAdjustment] = useState(false);
+  const [selectedMemberForAdjustment, setSelectedMemberForAdjustment] = useState<MemberPlan | null>(null);
+  const [adjustmentData, setAdjustmentData] = useState({
+    type: 'adjustment' as 'payment' | 'fine' | 'adjustment' | 'waiver' | 'refund' | 'installment_payment' | 'fine_payment',
+    amount: 0,
+    direction: 'add' as 'add' | 'subtract',
+    note: ''
+  });
 
   const [editPlanForm, setEditPlanForm] = useState({
     name: '',
@@ -165,6 +177,43 @@ export default function PlanManagement() {
     });
   }, [enrolledMembers]);
 
+  const planStats = React.useMemo(() => {
+    const paymentsGrouped: { [key: string]: any[] } = {};
+    for (const p of payments) {
+      const mpId = p.member_plan_id || 'unknown';
+      if (!paymentsGrouped[mpId]) {
+        paymentsGrouped[mpId] = [];
+      }
+      paymentsGrouped[mpId].push(p);
+    }
+
+    let totalInstallment = 0;
+    let totalAdjustment = 0;
+    let totalPendingFine = 0;
+    let effectiveInstallmentBalance = 0;
+    let totalFinesCollected = 0;
+
+    for (const mpId of Object.keys(paymentsGrouped)) {
+      const groupStats = calculateMemberPlanBalances(paymentsGrouped[mpId]);
+      totalInstallment += groupStats.totalInstallment;
+      totalAdjustment += groupStats.totalAdjustment;
+      totalPendingFine += groupStats.totalPendingFine;
+      effectiveInstallmentBalance += groupStats.effectiveInstallmentBalance;
+      totalFinesCollected += groupStats.totalFinesCollected;
+    }
+
+    return {
+      totalInstallment,
+      totalAdjustment,
+      totalPendingFine,
+      effectiveInstallmentBalance,
+      totalFinesCollected
+    };
+  }, [payments]);
+
+  const totalCollected = planStats.effectiveInstallmentBalance;
+  const totalFinesCollected = planStats.totalFinesCollected;
+
   if (loading || !currentPlan) {
     return (
       <MobileLayout>
@@ -181,7 +230,6 @@ export default function PlanManagement() {
     new Date(m.next_due_date) < new Date()
   );
 
-  const totalCollected = enrolledMembers.reduce((acc, curr) => acc + (curr.total_collected || 0), 0);
   const activeCount = enrolledMembers.filter(m => m.status === 'active').length;
 
   const handleEnroll = async () => {
@@ -238,7 +286,7 @@ export default function PlanManagement() {
     }
   };
 
-  const handlePayment = async () => {
+   const handlePayment = async () => {
     if (!selectedMemberForPayment || !profile) return;
     try {
       await recordPayment({
@@ -246,7 +294,8 @@ export default function PlanManagement() {
         amount: paymentData.amount,
         penalty: paymentData.penalty,
         adminId: profile.id,
-        note: paymentData.note
+        note: paymentData.note,
+        type: 'installment_payment'
       });
       setShowPayment(false);
       setSelectedMemberForPayment(null);
@@ -262,6 +311,59 @@ export default function PlanManagement() {
       if (payData) setPayments(payData);
     } catch (e: any) {
       alert('Error recording payment: ' + (e.message || 'Unknown error'));
+    }
+  };
+
+  const handleAdjustment = async () => {
+    if (!selectedMemberForAdjustment || !profile) return;
+    if (adjustmentData.amount <= 0) {
+      alert('সঠিক টাকার পরিমাণ দিন।');
+      return;
+    }
+    if (!adjustmentData.note.trim()) {
+      alert('সমন্বয়ের কারণ বা নোট অবশ্যই দিন।');
+      return;
+    }
+    
+    // Calculate actual amount based on direction for general adjustments
+    let finalAmount = adjustmentData.amount;
+    if (adjustmentData.type === 'adjustment' && adjustmentData.direction === 'subtract') {
+      finalAmount = -adjustmentData.amount;
+    }
+
+    try {
+      await recordPayment({
+        memberPlanId: selectedMemberForAdjustment.id,
+        amount: finalAmount,
+        penalty: 0,
+        adminId: profile.id,
+        note: adjustmentData.note,
+        type: adjustmentData.type
+      });
+      
+      setShowAdjustment(false);
+      setSelectedMemberForAdjustment(null);
+      setAdjustmentData({
+        type: 'adjustment',
+        amount: 0,
+        direction: 'add',
+        note: ''
+      });
+
+      // Refresh payments list
+      const { data: payData } = await supabase
+          .from('plan_payments')
+          .select(`
+            *,
+            member_plans!inner(plan_id, profiles:member_id(full_name))
+          `)
+          .eq('member_plans.plan_id', id!)
+          .order('payment_date', { ascending: false });
+      if (payData) setPayments(payData);
+
+      alert('সমন্বয় বা সংশোধনী কার্যক্রম সফলভাবে সম্পন্ন হয়েছে।');
+    } catch (e: any) {
+      alert('Error recording adjustment: ' + (e.message || 'Unknown error'));
     }
   };
 
@@ -400,13 +502,21 @@ export default function PlanManagement() {
             className="space-y-6"
           >
             {/* Stats Grid */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               <div className="bg-white dark:bg-slate-900 p-5 rounded-[32px] border border-slate-50 dark:border-slate-800 shadow-sm">
                 <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-3">
                   <PiggyBank size={20} />
                 </div>
-                <span className="text-[11px] text-slate-400 bangla uppercase font-bold tracking-wider">মোট সংগ্রহ</span>
+                <span className="text-[11px] text-slate-400 bangla uppercase font-bold tracking-wider">মোট কিস্তি আদায়</span>
                 <p className="text-[20px] font-black text-slate-800 dark:text-slate-100 bangla">৳{totalCollected.toLocaleString()}</p>
+              </div>
+
+              <div className="bg-white dark:bg-slate-900 p-5 rounded-[32px] border border-slate-50 dark:border-slate-800 shadow-sm">
+                <div className="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-500/10 text-amber-500 flex items-center justify-center mb-3">
+                  <AlertCircle size={20} />
+                </div>
+                <span className="text-[11px] text-slate-400 bangla uppercase font-bold tracking-wider">মোট জরিমানা আদায়</span>
+                <p className="text-[20px] font-black text-slate-800 dark:text-slate-100 bangla">৳{totalFinesCollected.toLocaleString()}</p>
               </div>
               
               <div className="bg-white dark:bg-slate-900 p-5 rounded-[32px] border border-slate-50 dark:border-slate-800 shadow-sm">
@@ -425,7 +535,7 @@ export default function PlanManagement() {
                 <p className="text-[20px] font-black text-slate-800 dark:text-slate-100 bangla">{overdueMembers.length} জন</p>
               </div>
 
-              <div className="bg-white dark:bg-slate-900 p-5 rounded-[32px] border border-slate-50 dark:border-slate-800 shadow-sm">
+              <div className="bg-white dark:bg-slate-900 p-5 rounded-[32px] border border-slate-50 dark:border-slate-800 shadow-sm col-span-2 sm:col-span-1">
                 <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-3">
                   <TrendingUp size={20} />
                 </div>
@@ -581,6 +691,11 @@ export default function PlanManagement() {
                                  mp.next_due_date && 
                                  new Date(mp.next_due_date) < new Date();
                 
+                const memberPayments = payments.filter((p: any) => p.member_plan_id === mp.id);
+                const memberStats = calculateMemberPlanBalances(memberPayments);
+                const displayBalance = memberStats.effectiveInstallmentBalance;
+                const displayPendingFine = memberStats.totalPendingFine;
+                
                 return (
                   <motion.div 
                     key={mp.id}
@@ -670,6 +785,20 @@ export default function PlanManagement() {
                                     <CheckCircle2 size={16} className="text-emerald-500" />
                                     <span className="text-[12px] font-bold bangla">ডিটেইল/স্ট্যাটাস</span>
                                   </button>
+                                  <button onClick={() => { 
+                                    setSelectedMemberForAdjustment(mp); 
+                                    setAdjustmentData({ 
+                                      type: 'adjustment', 
+                                      amount: 0, 
+                                      direction: 'add', 
+                                      note: '' 
+                                    }); 
+                                    setShowAdjustment(true); 
+                                    setMenuOpenMemberId(null); 
+                                  }} className="w-full text-left p-3 rounded-xl flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                                    <Sliders size={16} className="text-amber-500 animate-pulse" />
+                                    <span className="text-[12px] font-bold bangla">সমন্বয় (Adjustment)</span>
+                                  </button>
                                   <button onClick={() => { setSelectedMemberPlan(mp); setShowRelease(true); setMenuOpenMemberId(null); }} className="w-full text-left p-3 rounded-xl flex items-center gap-2 hover:bg-rose-50 dark:hover:bg-rose-900/10 text-rose-500 transition-colors">
                                     <UserMinus size={16} />
                                     <span className="text-[12px] font-bold bangla">রিলিজ/বন্ধ</span>
@@ -688,12 +817,12 @@ export default function PlanManagement() {
                       <div className="flex flex-col gap-1.5">
                         <div className="flex justify-between text-[11px] font-bold bangla">
                           <span className="text-slate-400">ব্যালেন্স</span>
-                          <span className="text-primary">৳{mp.total_collected.toLocaleString()} / ৳{currentPlan.target_amount.toLocaleString()}</span>
+                          <span className="text-primary">৳{displayBalance.toLocaleString()} / ৳{currentPlan.target_amount.toLocaleString()}</span>
                         </div>
                         <div className="w-full h-1.5 bg-slate-50 dark:bg-slate-800 rounded-full overflow-hidden">
                           <div 
                             className={`h-full ${isOverdue ? 'bg-rose-500' : 'bg-primary'} transition-all duration-1000`}
-                            style={{ width: `${Math.min(100, (mp.total_collected / currentPlan.target_amount) * 100)}%` }}
+                            style={{ width: `${Math.min(100, (displayBalance / currentPlan.target_amount) * 100)}%` }}
                           />
                         </div>
                       </div>
@@ -710,7 +839,7 @@ export default function PlanManagement() {
                          </div>
                          <div className="flex flex-col text-right">
                             <span className="text-[10px] text-slate-400 bangla uppercase font-bold">জরিমানা বাকি</span>
-                            <span className="text-[13px] font-bold text-rose-500 bangla">৳০</span>
+                            <span className="text-[13px] font-bold text-rose-500 bangla">৳{displayPendingFine.toLocaleString()}</span>
                          </div>
                       </div>
                     </div>
@@ -746,29 +875,73 @@ export default function PlanManagement() {
                    <p className="text-[13px] text-slate-400 bangla">এখনও কোনো লেনদেন হয়নি</p>
                 </div>
               ) : (
-                payments.map((p, i) => (
-                  <motion.div
-                    key={p.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05 }}
-                    className="p-4 bg-white dark:bg-slate-900 border border-slate-50 dark:border-slate-800 rounded-[28px] shadow-sm flex items-center justify-between"
-                  >
-                    <div className="flex items-center gap-3">
-                       <div className="w-11 h-11 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-                          <Activity size={20} />
-                       </div>
-                       <div>
-                          <p className="text-[14px] font-bold text-slate-800 dark:text-slate-100 bangla">{p.member_plans?.profiles?.full_name}</p>
-                          <p className="text-[11px] text-slate-400 dark:text-slate-500">{new Date(p.payment_date).toLocaleDateString('bn-BD')} • {new Date(p.payment_date).toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' })}</p>
-                       </div>
-                    </div>
-                    <div className="text-right">
-                       <p className="text-[15px] font-black text-emerald-600 bangla">+৳{p.amount.toLocaleString()}</p>
-                       {p.penalty_paid > 0 && <p className="text-[10px] font-bold text-rose-500 bangla">বিলম্ব ফি ৳{p.penalty_paid}</p>}
-                    </div>
-                  </motion.div>
-                ))
+                payments.map((p, i) => {
+                  let iconBg = "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500";
+                  let typeLabel = "কিস্তি জমা";
+                  let displayAmountClass = "text-emerald-600 dark:text-emerald-400";
+                  let displayAmountPrefix = "+৳";
+                  const displayAmount = Math.abs(p.amount);
+
+                  if (p.type === 'fine' || p.type === 'fine_payment') {
+                    iconBg = "bg-amber-50 dark:bg-amber-500/10 text-amber-500";
+                    typeLabel = "জরিমানা যুক্ত";
+                    displayAmountClass = "text-rose-600 dark:text-rose-400 font-bold";
+                    displayAmountPrefix = "-৳";
+                  } else if (p.type === 'adjustment') {
+                    iconBg = "bg-blue-50 dark:bg-blue-500/10 text-blue-500";
+                    typeLabel = p.amount >= 0 ? "সমন্বয় (বৃদ্ধি)" : "সমন্বয় (হ্রাস)";
+                    displayAmountClass = p.amount >= 0 ? "text-blue-600 dark:text-blue-400 font-bold" : "text-rose-600 dark:text-rose-400 font-bold";
+                    displayAmountPrefix = p.amount >= 0 ? "+৳" : "-৳";
+                  } else if (p.type === 'waiver') {
+                    iconBg = "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500";
+                    typeLabel = "জরিমানা মওকুফ";
+                    displayAmountClass = "text-emerald-600 dark:text-emerald-400 font-bold";
+                    displayAmountPrefix = "+৳";
+                  } else if (p.type === 'refund') {
+                    iconBg = "bg-rose-50 dark:bg-rose-500/10 text-rose-500";
+                    typeLabel = "টাকা রিফান্ড / ফেরত";
+                    displayAmountClass = "text-rose-600 dark:text-rose-400 font-black";
+                    displayAmountPrefix = "-৳";
+                  }
+
+                  return (
+                    <motion.div
+                      key={p.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                      className="p-4 bg-white dark:bg-slate-900 border border-slate-50 dark:border-slate-800 rounded-[28px] shadow-sm flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-3">
+                         <div className={`w-11 h-11 rounded-2xl ${iconBg} flex items-center justify-center`}>
+                            <Activity size={20} />
+                         </div>
+                         <div>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <p className="text-[14px] font-bold text-slate-800 dark:text-slate-100 bangla">{p.member_plans?.profiles?.full_name}</p>
+                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md bangla ${iconBg}`}>
+                                {typeLabel}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                              {new Date(p.payment_date).toLocaleDateString('bn-BD')} • {new Date(p.payment_date).toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                            {p.note && (
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400 bangla italic mt-0.5 max-w-[220px] truncate leading-tight">
+                                {p.note}
+                              </p>
+                            )}
+                         </div>
+                      </div>
+                      <div className="text-right">
+                         <p className={`text-[15px] font-black ${displayAmountClass} bangla`}>
+                           {displayAmountPrefix}{displayAmount.toLocaleString()}
+                         </p>
+                         {p.penalty_paid > 0 && <p className="text-[10px] font-bold text-rose-500 bangla">বিলম্ব ফি ৳{p.penalty_paid}</p>}
+                      </div>
+                    </motion.div>
+                  );
+                })
               )}
             </div>
           </motion.div>
@@ -910,6 +1083,130 @@ export default function PlanManagement() {
                   onClick={handlePayment}
                   className="w-full py-5 bg-emerald-500 text-white rounded-2xl font-bold bangla shadow-xl shadow-emerald-500/20 active:scale-95 transition-transform mt-4"
                 >জমা নিশ্চিত করুন</button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Record Adjustment Modal */}
+      <AnimatePresence>
+        {showAdjustment && selectedMemberForAdjustment && (
+          <div className="fixed inset-0 z-[100] flex items-end justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAdjustment(false)} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
+            <motion.div initial={{ y: 500 }} animate={{ y: 0 }} exit={{ y: 500 }} className="w-full max-w-[420px] bg-white dark:bg-slate-900 rounded-t-[40px] p-8 pb-12 relative z-10 max-h-[92vh] overflow-y-auto custom-scrollbar">
+              <div className="items-center mb-6 flex gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                  <Sliders size={24} />
+                </div>
+                <div>
+                   <h3 className="text-[18px] font-bold text-slate-800 dark:text-slate-100 bangla">আর্থিক সমন্বয় (Adjustment)</h3>
+                   <span className="text-[12px] text-slate-400 bangla">সদস্য: {selectedMemberForAdjustment.profiles?.full_name}</span>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {/* Mode Select */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] font-bold text-slate-400 bangla ml-1 uppercase">ধরন / Type</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { id: 'adjustment', label: 'সমন্বয় (Adjustment)', color: 'blue' },
+                      { id: 'fine_payment', label: 'নতুন জরিমানা (Fine)', color: 'amber' },
+                      { id: 'waiver', label: 'জরিমানা মওকুফ (Waiver)', color: 'indigo' },
+                      { id: 'refund', label: 'টাকা রিফান্ড (Refund)', color: 'rose' },
+                      { id: 'installment_payment', label: 'কিস্তি সংশোধন (Payment)', color: 'emerald' },
+                    ].map((opt) => {
+                      const isActive = adjustmentData.type === opt.id;
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => setAdjustmentData({ ...adjustmentData, type: opt.id as any })}
+                          className={`p-3 rounded-xl border text-center transition-all text-[12px] font-bold bangla ${
+                            isActive 
+                              ? `bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400`
+                              : 'bg-slate-50 dark:bg-slate-800/50 border-transparent text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Adjustment Direction - only shown for general adjustment type */}
+                {adjustmentData.type === 'adjustment' && (
+                  <div className="flex flex-col gap-1.5 bg-slate-50 dark:bg-slate-800/40 p-3 rounded-2xl">
+                    <label className="text-[11px] font-bold text-slate-400 bangla ml-1 uppercase">ব্যালেন্সের পরিবর্তন</label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setAdjustmentData({ ...adjustmentData, direction: 'add' })}
+                        className={`flex-1 py-2.5 rounded-xl text-center font-bold text-[13px] bangla transition-all ${
+                          adjustmentData.direction === 'add'
+                            ? 'bg-emerald-500 text-white'
+                            : 'bg-slate-200/50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-400'
+                        }`}
+                      >
+                        বৃদ্ধি করুন (+)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAdjustmentData({ ...adjustmentData, direction: 'subtract' })}
+                        className={`flex-1 py-2.5 rounded-xl text-center font-bold text-[13px] bangla transition-all ${
+                          adjustmentData.direction === 'subtract'
+                            ? 'bg-rose-500 text-white'
+                            : 'bg-slate-200/50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-400'
+                        }`}
+                      >
+                        হ্রাস করুন (-)
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Amount input */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] font-bold text-slate-400 bangla ml-1 uppercase">টাকার পরিমাণ</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-slate-400">৳</span>
+                    <input 
+                      type="number" 
+                      placeholder="Amount"
+                      className="w-full pl-8 p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border-none outline-none font-black text-slate-800 dark:text-slate-100"
+                      value={adjustmentData.amount || ''}
+                      onChange={(e) => setAdjustmentData({...adjustmentData, amount: parseFloat(e.target.value) || 0})}
+                    />
+                  </div>
+                </div>
+
+                {/* Note/Reason */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] font-bold text-slate-400 bangla ml-1 uppercase">সমন্বয়ের কারণ বা নোট (বাধ্যতামূলক)</label>
+                  <textarea 
+                    placeholder="হিসাব সমন্বয়ের সঠিক কারণটি লিখুন..." 
+                    className="w-full p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border-none outline-none bangla text-[14px] min-h-[80px]"
+                    value={adjustmentData.note}
+                    onChange={(e) => setAdjustmentData({...adjustmentData, note: e.target.value})}
+                  />
+                </div>
+
+                {/* Info Alert Box */}
+                <div className="p-3 bg-blue-50/50 dark:bg-blue-500/5 rounded-2xl text-[12px] text-blue-500 dark:text-blue-400 flex gap-2 items-start bangla">
+                  <ShieldAlert size={16} className="shrink-0 mt-0.5" />
+                  <span>
+                    <strong>দৃষ্টি আকর্ষণ:</strong> এই লেনদেনটি সম্পূর্ণ নতুন সংশোধনী বা সমন্বয় ট্র্যাকার হিসেবে যোগ হবে। পূর্ববর্তী কোনো ওল্ড ট্রানজেকশনকে এডিট বা ডিলিট করা হবে না, যার ফলে আর্থিক হিসাব অডিট-নিরাপদ থাকবে।
+                  </span>
+                </div>
+
+                <button 
+                  onClick={handleAdjustment}
+                  className="w-full py-4 bg-amber-500 text-slate-900 rounded-2xl font-bold bangla shadow-xl shadow-amber-500/20 active:scale-95 transition-transform mt-2 hover:bg-amber-600 hover:text-white"
+                >
+                  সমন্বয় নিশ্চিত করুন
+                </button>
               </div>
             </motion.div>
           </div>

@@ -99,7 +99,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       
       if (error) {
         console.warn('Session retrieval error:', error.message);
-        if (error.message.toLowerCase().includes('refresh token not found')) {
+        const errMsg = error.message.toLowerCase();
+        if (errMsg.includes('refresh token') || errMsg.includes('refresh_token') || errMsg.includes('token not found') || errMsg.includes('invalid refresh')) {
           // Forcefully clear session if refresh token is gone
           try {
             await supabase.auth.signOut();
@@ -129,7 +130,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
     } catch (error: any) {
       console.error('Auth initialization error:', error);
-      const isRefreshError = error.message?.toLowerCase().includes('refresh token not found');
+      const msg = error?.message?.toLowerCase() || '';
+      const isRefreshError = msg.includes('refresh token') || msg.includes('refresh_token') || msg.includes('token not found') || msg.includes('invalid refresh');
       
       if (isRefreshError) {
         try {
@@ -172,7 +174,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
       } catch (error: any) {
         console.error('Auth state change handler error:', error);
-        if (error.message?.toLowerCase().includes('refresh token not found')) {
+        const msg = error?.message?.toLowerCase() || '';
+        if (msg.includes('refresh token') || msg.includes('refresh_token') || msg.includes('token not found') || msg.includes('invalid refresh')) {
           set({ user: null, profile: null, loading: false });
         }
       }

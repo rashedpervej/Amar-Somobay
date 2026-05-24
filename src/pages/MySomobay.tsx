@@ -61,7 +61,7 @@ export default function MySomobay() {
                     <span className="text-[18px] font-bold text-slate-800 dark:text-slate-200 bangla mb-1">{mp.plan?.name}</span>
                     <div className="flex items-center gap-2 text-[12px] text-slate-400 bangla font-medium">
                       <Clock size={14} />
-                      <span>{mp.plan?.duration_months} মাসের প্ল্যান</span>
+                      <span>{mp.plan?.duration_months} মাসের প্ল্যান (৳{mp.plan?.installment_amount?.toLocaleString()} /{mp.plan?.frequency === 'weekly' ? 'সপ্তাহ' : mp.plan?.frequency === 'monthly' ? 'মাস' : 'কাস্টম'})</span>
                     </div>
                   </div>
                   <div className={`px-4 py-1.5 rounded-full text-[11px] font-bold bangla border ${
@@ -75,11 +75,18 @@ export default function MySomobay() {
                 <div className="mb-8">
                   <div className="flex justify-between items-end mb-3 px-1">
                     <div className="flex flex-col">
-                      <span className="text-[12px] text-slate-400 bangla mb-0.5">কিস্তির পরিমাণ</span>
-                      <span className="text-[18px] font-bold text-slate-800 dark:text-slate-100 bangla leading-none">
-                        ৳{mp.plan?.installment_amount.toLocaleString()} ৳
-                        <span className="text-[12px] text-slate-400 font-medium lowercase ml-1">/{mp.plan?.frequency === 'weekly' ? 'সপ্তাহ' : 'মাস'}</span>
-                      </span>
+                      <span className="text-[12px] text-slate-400 bangla mb-0.5">প্রদেয় কিস্তির পরিমাণ</span>
+                      <div className="relative inline-block">
+                        <span className="text-[18px] font-bold text-slate-800 dark:text-slate-100 bangla leading-none">
+                          ৳{((mp.plan?.installment_amount || 0) + (mp.pending_fine || 0)).toLocaleString()}
+                          <span className="text-[12px] text-slate-400 font-medium lowercase ml-1">/{mp.plan?.frequency === 'weekly' ? 'সপ্তাহ' : 'মাস'}</span>
+                        </span>
+                        {mp.pending_fine > 0 && (
+                          <span className="absolute -top-3 left-full ml-1.5 whitespace-nowrap bg-rose-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-bold bangla shadow-sm">
+                            জরিমানা সহ
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="text-right flex flex-col items-end">
                        <span className="text-[12px] text-slate-400 bangla mb-0.5">সংগৃহীত</span>

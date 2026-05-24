@@ -42,6 +42,69 @@ export interface PlanPayment {
   admin_id: string;
   status: 'pending' | 'approved' | 'rejected';
   note: string;
+  type?: 'payment' | 'fine' | 'adjustment' | 'waiver' | 'refund';
+}
+
+export interface PlanBalances {
+  totalInstallment: number;
+  totalAdjustment: number;
+  totalPendingFine: number;
+  effectiveInstallmentBalance: number;
+  totalFinesCollected: number;
+}
+
+export function calculateMemberPlanBalances(payments: any[]): PlanBalances {
+  const sortedPayments = [...payments]
+    .filter(p => !p.status || p.status === 'approved')
+    .sort((a, b) => new Date(a.payment_date || a.created_at || 0).getTime() - new Date(b.payment_date || b.created_at || 0).getTime());
+
+  let totalInstallment = 0;
+  let totalAdjustment = 0;
+  let totalRefund = 0;
+  let runningPendingFine = 0;
+  let totalFinesCollected = 0;
+
+  for (const p of sortedPayments) {
+    const type = p.type || 'payment';
+    const amount = p.amount || 0;
+
+    if (type === 'fine' || type === 'fine_payment') {
+      runningPendingFine += amount;
+    } else if (type === 'waiver') {
+      const waiverPendingAmt = Math.min(amount, runningPendingFine);
+      runningPendingFine -= waiverPendingAmt;
+      
+      const waiverCollectedAmt = amount - waiverPendingAmt;
+      totalFinesCollected -= waiverCollectedAmt;
+    } else if (type === 'adjustment') {
+      totalAdjustment += amount;
+    } else if (type === 'refund') {
+      totalRefund += amount;
+    } else if (type === 'installment_payment' || type === 'payment' || type === 'installment') {
+      const penaltyPaid = p.penalty_paid || 0;
+      const penaltyAdjusted = Math.min(penaltyPaid, runningPendingFine);
+      runningPendingFine -= penaltyAdjusted;
+      totalFinesCollected += penaltyPaid;
+
+      const fineAdjusted = Math.min(amount, runningPendingFine);
+      runningPendingFine -= fineAdjusted;
+      totalFinesCollected += fineAdjusted;
+
+      const installmentPart = amount - fineAdjusted;
+      totalInstallment += installmentPart;
+    }
+  }
+
+  const userTotalAdjustment = totalRefund - totalAdjustment;
+  const effectiveInstallmentBalance = totalInstallment - userTotalAdjustment - runningPendingFine;
+
+  return {
+    totalInstallment,
+    totalAdjustment: userTotalAdjustment,
+    totalPendingFine: runningPendingFine,
+    effectiveInstallmentBalance,
+    totalFinesCollected: Math.max(0, totalFinesCollected)
+  };
 }
 
 interface SomobayState {
@@ -54,6 +117,7 @@ interface SomobayState {
     activePlanTypes: number;
     activeEnrollments: number;
     totalCollections: number;
+    totalFinesCollected: number;
     overdueMembers: number;
     pendingDues: number;
   };
@@ -70,6 +134,7 @@ interface SomobayState {
     penalty: number;
     adminId: string;
     note: string;
+    type?: 'payment' | 'fine' | 'adjustment' | 'waiver' | 'refund' | 'installment_payment' | 'fine_payment';
   }) => Promise<void>;
   sendReminders: () => Promise<{ sent: number; alreadyNotified: number }>;
   transferMember: (memberPlanId: string, currentMemberId: string, newMemberId: string, adminId: string) => Promise<void>;
@@ -86,6 +151,7 @@ export const useSomobayStore = create<SomobayState>((set, get) => ({
     activePlanTypes: 0,
     activeEnrollments: 0,
     totalCollections: 0,
+    totalFinesCollected: 0,
     overdueMembers: 0,
     pendingDues: 0
   },
@@ -121,7 +187,25 @@ export const useSomobayStore = create<SomobayState>((set, get) => ({
     if (error) {
       console.error('Error fetching member plans:', error);
     } else {
-      set({ memberPlans: (data as any) || [] });
+      // Fetch approved payments to dynamically calculate exact balances
+      const { data: paymentsData } = await supabase
+        .from('plan_payments')
+        .select('*')
+        .eq('status', 'approved');
+
+      const approvedPayments = paymentsData || [];
+
+      const enrichedPlans = (data || []).map((mp: any) => {
+        const paymentsForMember = approvedPayments.filter((p: any) => p.member_plan_id === mp.id);
+        const stats = calculateMemberPlanBalances(paymentsForMember);
+        return {
+          ...mp,
+          total_collected: stats.effectiveInstallmentBalance,
+          pending_fine: stats.totalPendingFine
+        };
+      });
+
+      set({ memberPlans: enrichedPlans });
     }
     set({ loading: false });
   },
@@ -146,9 +230,27 @@ export const useSomobayStore = create<SomobayState>((set, get) => ({
       // Calculate pending dues (rough estimate)
       const pendingDues = overduePlans.reduce((acc, curr) => acc + ((curr.plan as any)?.installment_amount || 0), 0);
 
-      // 4. Total Collections from All Time
-      const { data: paymentsData } = await supabase.from('plan_payments').select('amount');
-      const totalCollections = paymentsData?.reduce((acc, curr) => acc + curr.amount, 0) || 0;
+      // 4. Total Collections and Fines from All Time using Centralized Formula
+      const { data: paymentsData } = await supabase.from('plan_payments').select('member_plan_id, amount, type, status, penalty_paid');
+      const approvedPayments = paymentsData?.filter(p => !p.status || p.status === 'approved') || [];
+      
+      const paymentsGrouped: { [key: string]: any[] } = {};
+      for (const p of approvedPayments) {
+        const mpId = p.member_plan_id || 'unknown';
+        if (!paymentsGrouped[mpId]) {
+          paymentsGrouped[mpId] = [];
+        }
+        paymentsGrouped[mpId].push(p);
+      }
+
+      let totalCollectionsAll = 0;
+      let totalFinesCollectedAll = 0;
+
+      for (const mpId of Object.keys(paymentsGrouped)) {
+        const groupStats = calculateMemberPlanBalances(paymentsGrouped[mpId]);
+        totalCollectionsAll += groupStats.effectiveInstallmentBalance;
+        totalFinesCollectedAll += groupStats.totalFinesCollected;
+      }
 
       // 5. Overdue Members (Unique members)
       const { data: overdueMembersData } = await supabase.from('member_plans').select('member_id').eq('status', 'active').lt('next_due_date', today);
@@ -159,7 +261,8 @@ export const useSomobayStore = create<SomobayState>((set, get) => ({
           totalMembers: membersCount || 0,
           activePlanTypes: planTypesCount || 0,
           activeEnrollments: activeEnrollments.length,
-          totalCollections,
+          totalCollections: totalCollectionsAll,
+          totalFinesCollected: totalFinesCollectedAll,
           overdueMembers: overdueMembersCount,
           pendingDues
         }
@@ -237,7 +340,8 @@ export const useSomobayStore = create<SomobayState>((set, get) => ({
       penalty_paid: data.penalty,
       admin_id: data.adminId,
       note: data.note,
-      status: 'approved'
+      status: 'approved',
+      type: data.type || 'payment'
     }]);
 
     if (pError) throw pError;
@@ -245,14 +349,37 @@ export const useSomobayStore = create<SomobayState>((set, get) => ({
     // We no longer manually update member_plans here.
     // The database trigger trg_sync_member_plan_summary handles it.
     
-    // Record Notification
+    // Record Notification based on dynamic type
     const { data: mpData } = await supabase.from('member_plans').select('member_id, plan:somobay_plans(name)').eq('id', data.memberPlanId).single();
     if (mpData) {
+      let title = 'কিস্তি জমা সফল';
+      let message = `আপনার "${(mpData as any).plan?.name}" প্ল্যানে ${data.amount.toLocaleString()} টাকা কিস্তি জমা দেওয়া হয়েছে। তারিখ: ${new Date().toLocaleDateString('bn-BD')}`;
+      let nType: 'success' | 'warning' | 'info' | 'error' = 'success';
+
+      const type = data.type || 'payment';
+      if (type === 'fine') {
+        title = 'জরিমানা যুক্ত করা হয়েছে';
+        message = `আপনার "${(mpData as any).plan?.name}" প্ল্যানে ${data.amount.toLocaleString()} টাকা জরিমানা যুক্ত করা হয়েছে। নোট: ${data.note || 'নেই'}`;
+        nType = 'warning';
+      } else if (type === 'waiver') {
+        title = 'জরিমানা মওকুফ করা হয়েছে';
+        message = `আপনার "${(mpData as any).plan?.name}" প্ল্যানে ${data.amount.toLocaleString()} টাকা জরিমানা মওকুফ করা হয়েছে। নোট: ${data.note || 'নেই'}`;
+        nType = 'success';
+      } else if (type === 'adjustment') {
+        title = 'আর্থিক সমন্বয় রেকর্ডকৃত';
+        message = `আপনার "${(mpData as any).plan?.name}" প্ল্যানে ${data.amount.toLocaleString()} টাকা সমন্বয় করা হয়েছে। নোট: ${data.note || 'নেই'}`;
+        nType = 'info';
+      } else if (type === 'refund') {
+        title = 'ফেরত বা রিফান্ড সম্পন্ন';
+        message = `আপনার "${(mpData as any).plan?.name}" প্ল্যান থেকে ${data.amount.toLocaleString()} টাকা ফেরত/রিফান্ড করা হয়েছে। নোট: ${data.note || 'নেই'}`;
+        nType = 'error';
+      }
+
       await supabase.from('notifications').insert([{
         user_id: mpData.member_id,
-        title: 'কিস্তি জমা সফল',
-        message: `আপনার "${(mpData as any).plan?.name}" প্ল্যানে ${data.amount.toLocaleString()} টাকা কিস্তি জমা দেওয়া হয়েছে। তারিখ: ${new Date().toLocaleDateString('bn-BD')}`,
-        type: 'success',
+        title,
+        message,
+        type: nType,
         source_module: 'plan'
       }]);
     }

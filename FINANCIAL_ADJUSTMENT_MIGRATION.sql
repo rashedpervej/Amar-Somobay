@@ -1,10 +1,41 @@
--- 1. Create the core synchronization function
--- This function calculates the total collected amount and predicts the next due date
--- based on the plan's frequency, due day/date, and the enrollment start date.
+-- Migration to support Financial Adjustment System for Somobay plan payments
+-- Run this in your Supabase SQL Editor.
+
+-- 1. Add/modify 'type' column to public.plan_payments table if it doesn't already exist.
+-- Possible types: 'payment', 'fine', 'adjustment', 'waiver', 'refund', 'installment_payment', 'fine_payment'
+-- We support legacy types for perfect backward compatibility.
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 
+        FROM information_schema.columns 
+        WHERE table_name = 'plan_payments' AND column_name = 'type'
+    ) THEN
+        ALTER TABLE public.plan_payments ADD COLUMN type text DEFAULT 'payment';
+    END IF;
+    
+    -- Recreate constraint with complete list of audit-safe and legacy types
+    ALTER TABLE public.plan_payments DROP CONSTRAINT IF EXISTS chk_plan_payment_type;
+    ALTER TABLE public.plan_payments 
+    ADD CONSTRAINT chk_plan_payment_type 
+    CHECK (type IN ('payment', 'fine', 'adjustment', 'waiver', 'refund', 'installment_payment', 'fine_payment'));
+END $$;
+
+-- 2. Update the sync_member_plan_summary function to compute the balance formula:
+-- Only standard installment_payments (and legacy payments), adjustments, minus refunds are counted for installment balances.
+-- Fines, waivers, and penalties are a separate stream and DO NOT affect installment progress.
 CREATE OR REPLACE FUNCTION sync_member_plan_summary(p_member_plan_id UUID)
 RETURNS VOID AS $func$
 DECLARE
+    r RECORD;
+    v_total_installment NUMERIC := 0;
+    v_total_adjustment NUMERIC := 0;
+    v_total_refund NUMERIC := 0;
+    v_running_pending_fine NUMERIC := 0;
+    v_fine_adjusted NUMERIC;
+    v_installment_part NUMERIC;
     v_total_collected NUMERIC;
+
     v_plan_id UUID;
     v_installment_amount NUMERIC;
     v_frequency TEXT;
@@ -16,21 +47,31 @@ DECLARE
     v_current_month_start DATE;
     v_i INTEGER;
 BEGIN
-    -- Calculate total collected of installments (affects next_due_date and progress balance)
-    -- Formula: installment_payment + payment + adjustment - refund
-    SELECT COALESCE(SUM(
-        CASE 
-            WHEN type = 'installment_payment' THEN amount
-            WHEN type = 'payment' THEN amount
-            WHEN type = 'installment' THEN amount
-            WHEN type = 'adjustment' THEN amount
-            WHEN type = 'refund' THEN -amount
-            ELSE 0
-        END
-    ), 0)
-    INTO v_total_collected
-    FROM public.plan_payments
-    WHERE member_plan_id = p_member_plan_id AND status = 'approved';
+    -- Chronological loop over approved payments for this member plan to calculate the exact effective collected balance
+    FOR r IN 
+        SELECT amount, type
+        FROM public.plan_payments
+        WHERE member_plan_id = p_member_plan_id AND status = 'approved'
+        ORDER BY payment_date ASC, created_at ASC, id ASC
+    LOOP
+        IF r.type = 'fine' OR r.type = 'fine_payment' THEN
+            v_running_pending_fine := v_running_pending_fine + COALESCE(r.amount, 0);
+        ELSIF r.type = 'waiver' THEN
+            v_running_pending_fine := GREATEST(0, v_running_pending_fine - COALESCE(r.amount, 0));
+        ELSIF r.type = 'adjustment' THEN
+            v_total_adjustment := v_total_adjustment + COALESCE(r.amount, 0);
+        ELSIF r.type = 'refund' THEN
+            v_total_refund := v_total_refund + COALESCE(r.amount, 0);
+        ELSIF r.type = 'installment_payment' OR r.type = 'payment' OR r.type = 'installment' THEN
+            v_fine_adjusted := LEAST(COALESCE(r.amount, 0), v_running_pending_fine);
+            v_running_pending_fine := v_running_pending_fine - v_fine_adjusted;
+            v_installment_part := COALESCE(r.amount, 0) - v_fine_adjusted;
+            v_total_installment := v_total_installment + v_installment_part;
+        END IF;
+    END LOOP;
+
+    -- effectiveInstallmentBalance = totalInstallment + totalAdjustment - totalRefund - totalPendingFine
+    v_total_collected := v_total_installment + v_total_adjustment - v_total_refund - v_running_pending_fine;
 
     -- Fetch plan details and enrollment info
     SELECT 
@@ -101,27 +142,7 @@ BEGIN
 END;
 $func$ LANGUAGE plpgsql;
 
--- 2. Create the trigger function wrapper
-CREATE OR REPLACE FUNCTION trg_func_sync_plan_payment()
-RETURNS TRIGGER AS $func$
-BEGIN
-    IF (TG_OP = 'DELETE') THEN
-        PERFORM sync_member_plan_summary(OLD.member_plan_id);
-    ELSE
-        PERFORM sync_member_plan_summary(NEW.member_plan_id);
-    END IF;
-    RETURN NULL;
-END;
-$func$ LANGUAGE plpgsql;
-
--- 3. Attach the trigger to the plan_payments table
-DROP TRIGGER IF EXISTS trg_sync_member_plan_summary ON public.plan_payments;
-CREATE TRIGGER trg_sync_member_plan_summary
-AFTER INSERT OR UPDATE OR DELETE ON public.plan_payments
-FOR EACH ROW
-EXECUTE FUNCTION trg_func_sync_plan_payment();
-
--- 4. Initial sync for existing data
+-- 3. Run a sync to ensure existing data is synchronized with the new calculation logic
 DO $do$
 DECLARE
     r RECORD;

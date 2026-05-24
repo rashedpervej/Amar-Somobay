@@ -264,41 +264,110 @@ export default function SavingsHistory() {
                 className="dark-card p-5 rounded-[28px] border border-slate-100 dark:border-white/5 shadow-sm hover:shadow-md transition-all relative z-10"
               >
                 <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${getTxTypeColor(tx.transaction_type)}`}>
-                      {tx.transaction_type === 'plan_payment' || tx.transaction_type === 'savings' || tx.transaction_type === 'deposit' 
-                        ? <ArrowDownLeft size={24} strokeWidth={2.5} /> 
-                        : <ArrowUpRight size={24} strokeWidth={2.5} />}
-                    </div>
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[16px] font-bold text-slate-800 dark:text-slate-100 bangla leading-none">
-                          {getTxTypeLabel(tx.transaction_type)}
-                        </span>
-                        {tx.plan_name && (
-                           <span className="px-2 py-0.5 rounded-lg bg-primary/10 text-primary text-[10px] font-bold bangla uppercase tracking-wider">
-                             {tx.plan_name}
-                           </span>
-                        )}
-                      </div>
-                      <span className="text-[12px] text-slate-400 dark:text-slate-500 font-bold bangla mt-1 flex items-center gap-1.5">
-                        <CalendarIcon size={12} className="opacity-60" />
-                        {new Date(tx.created_at).toLocaleDateString('bn-BD', { day: 'numeric', month: 'long', year: 'numeric' })}
-                        <span className="opacity-30">•</span>
-                        {new Date(tx.created_at).toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="text-right flex flex-col items-end">
-                    <span className={`text-[19px] font-black bangla ${tx.transaction_type.includes('payment') || tx.transaction_type === 'savings' || tx.transaction_type === 'deposit' ? 'text-emerald-500' : 'text-slate-700 dark:text-slate-200'}`}>
-                      {tx.transaction_type.includes('payment') || tx.transaction_type === 'savings' || tx.transaction_type === 'deposit' ? '+' : '-'}৳{tx.amount.toLocaleString()}
-                    </span>
-                    {tx.penalty_paid > 0 && (
-                      <span className="text-[10px] text-rose-500 font-bold bangla mt-1">
-                        + জরিমানা: ৳{tx.penalty_paid}
-                      </span>
-                    )}
-                  </div>
+                  {(() => {
+                    let iconBg = getTxTypeColor(tx.transaction_type);
+                    let label = getTxTypeLabel(tx.transaction_type);
+                    let isDeposit = tx.transaction_type === 'savings' || tx.transaction_type === 'deposit' || (tx.transaction_type === 'plan_payment' && tx.type !== 'refund' && tx.type !== 'fine' && tx.type !== 'fine_payment' && tx.amount >= 0);
+                    let isNegative = tx.amount < 0 || tx.type === 'refund' || tx.type === 'fine' || tx.type === 'fine_payment';
+                    let displayAmountClass = isNegative ? 'text-rose-500' : 'text-emerald-500';
+                    let displayAmountPrefix = isNegative ? '-' : '+';
+
+                    if (tx.transaction_type === 'plan_payment') {
+                      if (tx.type === 'fine' || tx.type === 'fine_payment') {
+                        iconBg = 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400';
+                        label = 'জরিমানা যুক্ত';
+                        isDeposit = false;
+                        isNegative = true;
+                        displayAmountClass = 'text-rose-500 font-bold';
+                        displayAmountPrefix = '-';
+                      } else if (tx.type === 'waiver') {
+                        iconBg = 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400';
+                        label = 'জরিমানা মওকুফ';
+                        isDeposit = true;
+                        isNegative = false;
+                        displayAmountClass = 'text-emerald-500 font-bold';
+                        displayAmountPrefix = '+';
+                      } else if (tx.type === 'refund') {
+                        iconBg = 'bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400';
+                        label = 'টাকা রিফান্ড';
+                        isDeposit = false;
+                        isNegative = true;
+                        displayAmountClass = 'text-rose-500 font-black';
+                        displayAmountPrefix = '-';
+                      } else if (tx.type === 'adjustment') {
+                        iconBg = 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400';
+                        label = tx.amount >= 0 ? 'সমন্বয় (বৃদ্ধি)' : 'সমন্বয় (হ্রাস)';
+                        isDeposit = tx.amount >= 0;
+                        isNegative = tx.amount < 0;
+                        displayAmountClass = tx.amount >= 0 ? 'text-blue-500 font-bold' : 'text-rose-500 font-bold';
+                        displayAmountPrefix = tx.amount >= 0 ? '+' : '-';
+                      } else {
+                        iconBg = 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400';
+                        label = 'কিস্তি পরিশোধ';
+                        isDeposit = true;
+                        isNegative = false;
+                        displayAmountClass = 'text-emerald-500';
+                        displayAmountPrefix = '+';
+                      }
+                    } else if (tx.transaction_type === 'fine') {
+                      iconBg = 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400';
+                      label = 'জরিমানা যুক্ত';
+                      isDeposit = false;
+                      isNegative = true;
+                      displayAmountClass = 'text-rose-500 font-bold';
+                      displayAmountPrefix = '-';
+                    } else if (tx.transaction_type === 'savings') {
+                      iconBg = 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400';
+                      isDeposit = true;
+                      isNegative = false;
+                      displayAmountClass = 'text-emerald-500';
+                      displayAmountPrefix = '+';
+                    } else if (tx.transaction_type === 'deposit') {
+                      iconBg = 'bg-cyan-50 text-cyan-600 dark:bg-cyan-500/10 dark:text-cyan-400';
+                      isDeposit = true;
+                      isNegative = false;
+                      displayAmountClass = 'text-cyan-500';
+                      displayAmountPrefix = '+';
+                    }
+
+                    return (
+                      <>
+                        <div className="flex items-center gap-4">
+                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${iconBg}`}>
+                            {isDeposit ? <ArrowDownLeft size={24} strokeWidth={2.5} /> : <ArrowUpRight size={24} strokeWidth={2.5} />}
+                          </div>
+                          <div className="flex flex-col">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-[16px] font-bold text-slate-800 dark:text-slate-100 bangla leading-none">
+                                {label}
+                              </span>
+                              {tx.plan_name && (
+                                 <span className="px-2 py-0.5 rounded-lg bg-primary/10 text-primary text-[10px] font-bold bangla uppercase tracking-wider">
+                                   {tx.plan_name}
+                                 </span>
+                              )}
+                            </div>
+                            <span className="text-[12px] text-slate-400 dark:text-slate-500 font-bold bangla mt-1 flex items-center gap-1.5 flex-wrap">
+                              <CalendarIcon size={12} className="opacity-60" />
+                              {new Date(tx.created_at).toLocaleDateString('bn-BD', { day: 'numeric', month: 'long', year: 'numeric' })}
+                              <span className="opacity-30">•</span>
+                              {new Date(tx.created_at).toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right flex flex-col items-end">
+                          <span className={`text-[19px] font-black bangla ${displayAmountClass}`}>
+                            {displayAmountPrefix}৳{Math.abs(tx.amount).toLocaleString('bn-BD')}
+                          </span>
+                          {tx.penalty_paid > 0 && (
+                            <span className="text-[10px] text-rose-500 font-bold bangla mt-1">
+                              + বিলম্ব ফি: ৳{tx.penalty_paid}
+                            </span>
+                          )}
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
 
                 <div className="mt-4 pt-4 border-t border-slate-100 dark:border-white/5 flex flex-wrap items-center gap-y-3 gap-x-6">

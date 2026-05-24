@@ -536,24 +536,105 @@ export default function Dashboard() {
                 className="dark-card p-4 rounded-[24px] flex items-center justify-between shadow-sm active:scale-[0.98] cursor-pointer"
                 onClick={() => navigate('/savings')}
               >
-                <div className="flex items-center gap-3">
-                  <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${tx.transaction_type.includes('payment') || tx.transaction_type === 'savings' || tx.transaction_type === 'deposit' ? 'bg-emerald-50 text-emerald-500 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-rose-50 text-rose-500 dark:bg-rose-500/10 dark:text-rose-400'}`}>
-                    {tx.transaction_type.includes('payment') || tx.transaction_type === 'savings' || tx.transaction_type === 'deposit' ? <ArrowDownLeft size={20} strokeWidth={2.5} /> : <ArrowUpRight size={20} strokeWidth={2.5} />}
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[16px] font-bold text-slate-800 dark:text-slate-100 bangla leading-none mb-1">
-                      {tx.transaction_type === 'plan_payment' ? 'কিস্তি জমা' : tx.transaction_type === 'savings' ? 'সঞ্চয় জমা' : tx.transaction_type === 'deposit' ? 'আমানত জমা' : tx.transaction_type === 'loan' ? 'ঋণ গ্রহণ' : tx.transaction_type === 'fine' ? 'জরিমানা' : 'লেনদেন'}
-                    </span>
-                    <span className="text-[12px] text-slate-400 dark:text-slate-500 bangla font-medium">
-                      {new Date(tx.created_at).toLocaleDateString('bn-BD', { day: 'numeric', month: 'long' })}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex flex-col items-end">
-                  <span className={`text-[17px] font-extrabold bangla ${tx.transaction_type.includes('payment') || tx.transaction_type === 'savings' || tx.transaction_type === 'deposit' ? 'text-emerald-500' : 'text-rose-500'}`}>
-                    {tx.transaction_type.includes('payment') || tx.transaction_type === 'savings' || tx.transaction_type === 'deposit' ? '+' : '-'}৳{tx.amount.toLocaleString()}
-                  </span>
-                </div>
+                {(() => {
+                  let iconBg = 'bg-slate-50 text-slate-600 dark:bg-slate-500/10 dark:text-slate-400';
+                  let label = 'লেনদেন';
+                  let isDeposit = tx.transaction_type === 'savings' || tx.transaction_type === 'deposit' || (tx.transaction_type === 'plan_payment' && tx.type !== 'refund' && tx.type !== 'fine' && tx.type !== 'fine_payment' && tx.amount >= 0);
+                  let isNegative = tx.amount < 0 || tx.type === 'refund' || tx.type === 'fine' || tx.type === 'fine_payment';
+                  let displayAmountClass = isNegative ? 'text-rose-500' : 'text-emerald-500';
+                  let displayAmountPrefix = isNegative ? '-' : '+';
+
+                  if (tx.transaction_type === 'plan_payment') {
+                    if (tx.type === 'fine' || tx.type === 'fine_payment') {
+                      iconBg = 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400';
+                      label = 'জরিমানা যুক্ত';
+                      isDeposit = false;
+                      isNegative = true;
+                      displayAmountClass = 'text-rose-500 font-bold';
+                      displayAmountPrefix = '-';
+                    } else if (tx.type === 'waiver') {
+                      iconBg = 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400';
+                      label = 'জরিমানা মওকুফ';
+                      isDeposit = true;
+                      isNegative = false;
+                      displayAmountClass = 'text-emerald-500 font-bold';
+                      displayAmountPrefix = '+';
+                    } else if (tx.type === 'refund') {
+                      iconBg = 'bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400';
+                      label = 'টাকা রিফান্ড';
+                      isDeposit = false;
+                      isNegative = true;
+                      displayAmountClass = 'text-rose-500 font-black';
+                      displayAmountPrefix = '-';
+                    } else if (tx.type === 'adjustment') {
+                      iconBg = 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400';
+                      label = tx.amount >= 0 ? 'সমন্বয় (বৃদ্ধি)' : 'সমন্বয় (হ্রাস)';
+                      isDeposit = tx.amount >= 0;
+                      isNegative = tx.amount < 0;
+                      displayAmountClass = tx.amount >= 0 ? 'text-blue-500 font-bold' : 'text-rose-500 font-bold';
+                      displayAmountPrefix = tx.amount >= 0 ? '+' : '-';
+                    } else {
+                      iconBg = 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400';
+                      label = 'কিস্তি পরিশোধ';
+                      isDeposit = true;
+                      isNegative = false;
+                      displayAmountClass = 'text-emerald-500';
+                      displayAmountPrefix = '+';
+                    }
+                  } else if (tx.transaction_type === 'fine') {
+                    iconBg = 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400';
+                    label = 'জরিমানা যুক্ত';
+                    isDeposit = false;
+                    isNegative = true;
+                    displayAmountClass = 'text-rose-500 font-bold';
+                    displayAmountPrefix = '-';
+                  } else if (tx.transaction_type === 'savings') {
+                    iconBg = 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400';
+                    label = 'সঞ্চয় জমা';
+                    isDeposit = true;
+                    isNegative = false;
+                    displayAmountClass = 'text-emerald-500';
+                    displayAmountPrefix = '+';
+                  } else if (tx.transaction_type === 'deposit') {
+                    iconBg = 'bg-cyan-50 text-cyan-600 dark:bg-cyan-500/10 dark:text-cyan-400';
+                    label = 'আমানত জমা';
+                    isDeposit = true;
+                    isNegative = false;
+                    displayAmountClass = 'text-cyan-500';
+                    displayAmountPrefix = '+';
+                  } else if (tx.transaction_type === 'loan') {
+                    iconBg = 'bg-purple-50 text-purple-600 dark:bg-purple-500/10 dark:text-purple-400';
+                    label = 'ঋণ গ্রহণ';
+                    isDeposit = false;
+                    isNegative = true;
+                    displayAmountClass = 'text-purple-500 font-bold';
+                    displayAmountPrefix = '-';
+                  }
+
+                  return (
+                    <>
+                      <div className="flex items-center gap-3">
+                        <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${iconBg}`}>
+                          {isDeposit ? <ArrowDownLeft size={20} strokeWidth={2.5} /> : <ArrowUpRight size={20} strokeWidth={2.5} />}
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[15px] font-bold text-slate-800 dark:text-slate-100 bangla leading-none mb-1">
+                            {label}
+                          </span>
+                          <span className="text-[12px] text-slate-400 dark:text-slate-500 bangla font-medium">
+                            {new Date(tx.created_at).toLocaleDateString('bn-BD', { day: 'numeric', month: 'long' })}
+                            {tx.plan_name && ` • ${tx.plan_name}`}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <span className={`text-[17px] font-extrabold bangla ${displayAmountClass}`}>
+                          {displayAmountPrefix}৳{Math.abs(tx.amount).toLocaleString('bn-BD')}
+                        </span>
+                      </div>
+                    </>
+                  );
+                })()}
               </motion.div>
             ))
           ) : (
