@@ -23,6 +23,7 @@ import SavingsHistory from './pages/SavingsHistory';
 import ManageSomobay from './pages/ManageSomobay';
 import PlanManagement from './pages/PlanManagement';
 import MySomobay from './pages/MySomobay';
+import SavingsInsights from './pages/SavingsInsights';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import ScrollToTop from './components/ScrollToTop';
 
@@ -55,6 +56,7 @@ export default function App() {
             <Route path="/settings/profile" element={<EditProfile />} />
             <Route path="/settings/security" element={<Security />} />
             <Route path="/savings" element={<SavingsHistory />} />
+            <Route path="/savings/insights" element={<SavingsInsights />} />
             <Route path="/savings/deposit" element={<SingleDeposit />} />
             <Route path="/savings/bulk" element={<BulkDeposit />} />
             <Route path="/somobay/manage" element={<ManageSomobay />} />

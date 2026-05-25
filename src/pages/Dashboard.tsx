@@ -321,9 +321,7 @@ export default function Dashboard() {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        whileHover={{ scale: 1.01 }}
-        whileTap={{ scale: 0.98 }}
-        className="w-full mt-0 relative cursor-pointer group rounded-[24px] overflow-hidden text-white shadow-2xl border border-white/5"
+        className="w-full mt-0 relative rounded-[24px] overflow-hidden text-white shadow-2xl border border-white/5"
         style={{ 
           height: "201px", 
           backgroundColor: "#02362F",
@@ -331,7 +329,6 @@ export default function Dashboard() {
           backgroundSize: 'cover',
           backgroundPosition: 'center'
         }}
-        onClick={() => navigate('/somobay/my')}
       >
         <div className="relative w-full h-full p-[16px] pb-[12px] flex flex-col justify-between z-10">
           {/* Header element */}
@@ -346,7 +343,13 @@ export default function Dashboard() {
               <h3 className="font-bold text-[14.5px] sm:text-[15.5px] bangla tracking-wide">সমবায় সারসংক্ষেপ</h3>
               <div className="w-[44px] h-[2.5px] bg-emerald-400 mt-1 rounded" />
             </div>
-            <button className="flex items-center gap-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-full px-2.5 py-1 text-[10px] sm:text-[11px] bangla font-bold transition-all">
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate('/savings/insights');
+              }}
+              className="flex items-center gap-1 bg-white/10 hover:bg-white/20 active:scale-95 cursor-pointer border border-white/20 rounded-full px-2.5 py-1 text-[10px] sm:text-[11px] bangla font-bold transition-all relative z-20"
+            >
               <span>বিস্তারিত দেখুন</span> <ChevronRight size={10} />
             </button>
           </div>
@@ -523,8 +526,9 @@ export default function Dashboard() {
       <motion.div 
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        onClick={() => navigate('')}
-        className="mt-0 bg-[#110d29] rounded-[20px] p-2 px-3 sm:px-4 flex items-center border border-white/5 relative overflow-hidden shadow-2xl active:scale-[0.98] transition-all cursor-pointer group"
+        whileHover={{ scale: 1.015 }}
+        whileTap={{ scale: 0.985 }}
+        className="mt-0 bg-[#110d29] rounded-[20px] p-2 px-3 sm:px-4 flex items-center border border-white/5 relative overflow-hidden shadow-2xl group transition-all"
       >
         {/* Soft decorative background circles from original reference UI to match image exactly */}
         <div className="absolute top-1/2 left-[-10px] -translate-y-1/2 w-28 h-28 rounded-full bg-indigo-500/10 blur-xl pointer-events-none" />
