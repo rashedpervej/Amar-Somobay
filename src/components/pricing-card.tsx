@@ -109,10 +109,6 @@ export function PricingCard({ plan, onSelect, className = '' }: PricingCardProps
   const yearlyTotal = plan.yearlyTotal ?? plan.yearlyPrice * 12;
   const motionOff = prefersReducedMotion;
 
-  const iconMotion = motionOff
-    ? {}
-    : { rotate: [0, -10, 10, 0], scale: [1, 1.08, 1] };
-
   return (
     <motion.div
       ref={shellRef}
