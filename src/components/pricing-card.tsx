@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   AnimatePresence,
   motion,
@@ -7,7 +7,6 @@ import {
   useSpring,
   useTransform,
 } from 'motion/react';
-import { useRef } from 'react';
 import {
   ArrowRight,
   Check,
@@ -63,7 +62,7 @@ function RollingDigit({ digit, reducedMotion }: { digit: number; reducedMotion: 
   const spring = useSpring(digit, { stiffness: 150, damping: 22, mass: 0.7 });
   const y = useTransform(spring, value => `-${value * 1.08}em`);
 
-  useMemo(() => {
+  useEffect(() => {
     spring.set(digit);
   }, [digit, spring]);
 
@@ -269,7 +268,7 @@ export function PricingCard({ plan, onSelect, className = '' }: PricingCardProps
 
         <ul className="space-y-4">
           {plan.features.map((feature, index) => {
-            const Icon = featureIcons[feature.icon ?? 'check' as keyof typeof featureIcons] ?? Check;
+            const Icon = feature.icon ? featureIcons[feature.icon] : Check;
             return (
               <motion.li
                 key={feature.title}
